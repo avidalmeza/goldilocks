@@ -3,12 +3,47 @@
 import os
 import re
 import numpy as np
+import pandas as pd
 import CifFile
 import mantid as mtd
 from mantid.simpleapi import CreateSampleWorkspace, SetSample
 from mantid.kernel import Material
 
-# Define read_cif function
+# Obtain current working directory filepath
+this_dir = os.getcwd()
+
+# Read attributes for sample powder canisters
+flat_plate = pd.read_excel(os.path.join(this_dir, 'cans.xlsx'))
+
+# Define remove_parentheses() function
+def remove_parentheses(i):
+    # Replace text within parentheses with empty string
+    # \( matches an opening parenthesis
+    # \) matches a closing parenthesis
+    # [^)]* matches any character except a closing parenthesis
+    return re.sub(r'\([^)]*\)', '', i) if i else None
+
+# Define validate_formula() function
+def validate_formula(format, formula):
+    # Flag an error if formula (string) does not match format (pattern)
+    if not re.fullmatch(format, formula):
+        raise ValueError(f'The string does not match the accepted format.')
+    
+    # Return `True` if formula (string) matches format (pattern), `False` otherwise
+    return True
+
+# Define sum_total_n() function
+def sum_total_n(i):
+    # Define regular expression to find all digits in string
+    digits = re.findall(r'\d', i)
+
+    # Convert digit to integer and sum all digits
+    total_sum = sum(int(j) for j in digits)
+    
+    # Return total sum
+    return total_sum
+
+# Define read_cif() function
 def read_cif(filepath):
     # Read Crystallographic Information File
     cif = CifFile.ReadCif(filepath)
@@ -39,7 +74,7 @@ def read_cif(filepath):
                 block_data[i] = None
                 print(f'{i}: Not found in {database_code_PCD}.')
 
-        # Add the block_data dictionary to the information dictionary
+        # Add block_data dictionary to information dictionary
         cif_dict[database_code_PCD] = block_data
 
     # Check for index troubleshooting
@@ -51,13 +86,6 @@ def read_cif(filepath):
     for key, value in block_data.items():
         print(f'{key}: {value}')
         print()
-
-    # Define regular expression to replace text within parentheses with empty string
-    def remove_parentheses(i):
-        # \( matches an opening parenthesis
-        # \) matches a closing parenthesis
-        # [^)]* matches any character except a closing parenthesis
-        return re.sub(r'\([^)]*\)', '', i) if i else None
 
     # Extract variables of interest
     a = remove_parentheses(cif_dict[database_code_PCD]['_cell_length_a'])
@@ -143,34 +171,45 @@ def read_cif(filepath):
     # Print total n
     # print('Total n:', total_n)
     
+    # Return mantid_formula, sample_n_density, total_n, a, b, c, alpha, beta, gamma
     return mantid_formula, sample_n_density, total_n, a, b, c, alpha, beta, gamma
 
-# Define cross-section calculator
-def xs_calculator(arg1, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annular'], can_material = 'aluminum', a = None, b = None, c = None, alpha = None, beta = None, gamma = None, Z_param = None):
-    # Define pattern for Mantid-approved formula
+# Define xs_calculator function; cross-section calculator
+def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annular'], can_material = 'aluminum', Z_param = None, a = None, b = None, c = None, alpha = None, beta = None, gamma = None):
+    # Define pattern
+    # Each element is followed by number of atoms for that element, specified without a hyphen; each element is separated from other elements using a hyphen
+    # For isotopes, isotope must be enclosed by parenthesis; e.g., (Li7)
     mantid_format = r'^(\([A-Za-z][a-z]*\d*\)\d*|[A-Za-z][a-z]*\d*)(-[A-Za-z][a-z]*\d*|\([A-Za-z][a-z]*\d*\)\d*)*$'
 
     # Define valid file extension
     file_extension = '.cif'
-    
-    # Define validate string
-    def validate_formula(format, formula):
-        if not re.fullmatch(format, formula):
-            # Flags an error if formula (string) does not match format (pattern)
-            raise ValueError(f'The string is not in the accepted format.')
-        # Return 'True' if formula (string) matches format (pattern), False otherwise
-        return True
 
-    # Check if arg1 is a file path for a CIF
+    # Check if x is a filepath for a CIF
     try:
-        if arg1.endswith(file_extension) and os.path.isfile(arg1):
-            read_cif(arg1)
-    # If error, check if arg1 is string and validate
+        if x.endswith(file_extension) and os.path.isfile(x):
+            # Extract mantid_formula, sample_n_density, total_n, a, b, c, alpha, beta, gamma with read_cif() function
+            read_cif(x)
+            
+            # Define sample
+            # Add material to data container/workspace
+            SetSample(ws, Material = {'ChemicalFormula': mantid_formula,
+                                      'SampleNumberDensity': sample_n_density})
+
+    # If error, check if x is a string and validate with validate_formula() function
     except ValueError:
-        if validate_formula(mantid_format, arg1):
-            mantid_formula = arg1
+        if validate_formula(mantid_format, x):
+            # Define mantid_formula if `True`
+            mantid_formula = x
+
+            # Define total_n if `True` with sum_total_n() function
+            total_n = sum_total_n(mantid_formula)
+
+            # Define sample
+            # Add material to data container/workspace
+            SetSample(ws, Material = {'ChemicalFormula': mantid_formula,
+                                      'ZParameter': Z_param})
         else:
-            print(f'{arg1} is neither a valid Mantid formula nor a CIF.')
+            print(f'{x} cannot be added to workspace. It does not match the accepted format nor is it a CIF.')
 
     # Check version for troubleshooting
     # mantid_version = mtd.__version__
@@ -185,12 +224,7 @@ def xs_calculator(arg1, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'an
 
     # Print formula for troubleshooting
     # print(mantid_formula)
-
-    # Define sample
-    # Add material to data container/workspace
-    SetSample(ws, Material = {'ChemicalFormula': mantid_formula,
-                              'SampleNumberDensity': sample_n_density})
-
+    
     # Check for troubleshooting
     sample = ws.sample()
 
@@ -249,7 +283,7 @@ def xs_calculator(arg1, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'an
     total_depth = unit_cell_volume/((scatter_xs + absorb_xs_sqrt)*pack_fraction)
     
     # Find thickness of sample spread homogenously over sample can in cm
-    sample_thick = sample_mass/(pack_fraction*theory_density*can_volume)
+    sample_thick = sample_mass/(pack_fraction*theory_density*can_volume) 
     
     # Find percent of incident beam that is scattered (assume no absorption)
     percent_scatter = 100 * (1-(np.exp(-(sample_thick/scatter_depth))))
@@ -259,3 +293,5 @@ def xs_calculator(arg1, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'an
     
     # Find thickness of a 10 percent scatterer in cm
     scatter_thick = np.log(0.9)*scatter_depth
+
+    return scatter_depth, percent_scatter, absorb_depth, percent_absorb
