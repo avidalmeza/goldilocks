@@ -13,7 +13,9 @@ from mantid.kernel import Material
 this_dir = os.getcwd()
 
 # Read attributes for sample powder canisters
-flat_plate = pd.read_excel(os.path.join(this_dir, 'cans.xlsx'))
+flat_plate = pd.read_csv(os.path.join(this_dir, 'flatPlate.csv'))
+# cylinder = pd.read_csv(os.path.join(this_dir, 'cylinder.csv'))
+# annular = pd.read_csv(os.path.join(this_dir, 'annular.csv'))
 
 # Define remove_parentheses() function
 def remove_parentheses(i):
@@ -264,17 +266,30 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
     sqrt_neutron_energy = np.sqrt(25/neutron_energy)
     absorb_xs_sqrt = absorb_xs*sqrt_neutron_energy
     
-    # Find sample weight
-    sample_mass = can_volume*pack_fraction
-    
-    # Find sample volume in cc
-    sample_volume = sample_mass/theory_density/pack_fraction
-    
-    # Find number of moles of formula unit in sample
-    sample_moles = sample_mass/molecular_mass
+    if 'flat' in can:
+        for can_volume in flat_plate['can_volume']:
+        # Find sample weight
+            sample_mass_flat = can_volume*pack_fraction
+        
+            # Find sample volume in cc
+            sample_volume_flat = sample_mass_flat/theory_density/pack_fraction
+
+            # Find number of moles of formula unit in sample
+            sample_moles_flat = sample_mass_flat/molecular_mass
+
+    if 'cyl' in can:
+        # Find sample weight
+        sample_mass_cyl = pack_fraction
+
+    if 'annular' in can:
+        # Find sample weight
+        sample_mass_annular = sample_volume*pack_fraction
     
     # Find penetration depth due to scattering in cm
     scatter_depth = unit_cell_volume/(scatter_xs*pack_fraction)
+
+    # Find thickness of a 10 percent scatterer in cm
+    scatter_thick = np.log(0.9)*scatter_depth
     
     # Find penetration depth due to absorption in cm
     absorb_depth = unit_cell_volume/(absorb_xs_sqrt*pack_fraction)
@@ -282,16 +297,27 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
     # Find total penetration depth due to scattering and absorption in cm
     total_depth = unit_cell_volume/((scatter_xs + absorb_xs_sqrt)*pack_fraction)
     
-    # Find thickness of sample spread homogenously over sample can in cm
-    sample_thick = sample_mass/(pack_fraction*theory_density*can_volume) 
+    if 'flat' in can:
+        for can_volume in flat_plate['can_volume']:
+            # Find thickness of sample spread homogenously over sample can in cm
+            sample_thick_flat = sample_mass_flat/(pack_fraction*theory_density*can_volume) 
     
-    # Find percent of incident beam that is scattered (assume no absorption)
-    percent_scatter = 100 * (1-(np.exp(-(sample_thick/scatter_depth))))
+            # Find percent of incident beam that is scattered (assume no absorption)
+            percent_scatter_flat = 100 * (1-(np.exp(-(sample_thick_flat/scatter_depth))))
     
-    # Find percent of incident beam that is absorbed (assume no scattering)
-    percent_absorb =  100 * (1-(np.exp(-(sample_thick/absorb_depth))))
-    
-    # Find thickness of a 10 percent scatterer in cm
-    scatter_thick = np.log(0.9)*scatter_depth
+            # Find percent of incident beam that is absorbed (assume no scattering)
+            percent_absorb_flat =  100 * (1-(np.exp(-(sample_thick_flat/absorb_depth))))
 
+    if 'cyl' in can:
+        # Find thickness of sample spread homogenously over sample can in cm
+        sample_thick_cyl = sample_mass_cyl/(pack_fraction*theory_density*can_volume) 
+    
+        # Find percent of incident beam that is scattered (assume no absorption)
+        percent_scatter_cyl = 100 * (1-(np.exp(-(sample_thick_cyl/scatter_depth))))
+    
+        # Find percent of incident beam that is absorbed (assume no scattering)
+        percent_absorb_cyl =  100 * (1-(np.exp(-(sample_thick_cyl/absorb_depth))))
+        
+    # if 'annular' in can:
+ 
     return scatter_depth, percent_scatter, absorb_depth, percent_absorb
