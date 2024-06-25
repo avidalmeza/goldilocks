@@ -14,7 +14,7 @@ this_dir = os.getcwd()
 
 # Read attributes for sample powder canisters
 flat_plate = pd.read_csv(os.path.join(this_dir, 'flatPlate.csv'))
-# cylinder = pd.read_csv(os.path.join(this_dir, 'cylinder.csv'))
+# cylindrical = pd.read_csv(os.path.join(this_dir, 'cylindrical.csv'))
 # annular = pd.read_csv(os.path.join(this_dir, 'annular.csv'))
 
 # Define remove_parentheses() function
@@ -266,24 +266,38 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
     sqrt_neutron_energy = np.sqrt(25/neutron_energy)
     absorb_xs_sqrt = absorb_xs*sqrt_neutron_energy
     
+    # Define empty dictionaries
+    sample_mass = {}
+    sample_volume = {}
+    sample_moles = {}
+
     if 'flat' in can:
-        for can_volume in flat_plate['can_volume']:
-        # Find sample weight
-            sample_mass_flat = can_volume*pack_fraction
+        for row in flat_plate.iterrows():
+            drawing_number = row['drawing_number']
+            sample_volume = row['sample_volume']
+
+            # Find sample weight
+            sample_mass = can_volume*pack_fraction
         
             # Find sample volume in cc
-            sample_volume_flat = sample_mass_flat/theory_density/pack_fraction
+            sample_volume = sample_mass/theory_density/pack_fraction
 
             # Find number of moles of formula unit in sample
-            sample_moles_flat = sample_mass_flat/molecular_mass
+            sample_moles = sample_mass/molecular_mass
+            
+            # Save to dictionaries
+            sample_mass[drawing_number] = sample_mass
+            sample_volume[drawing_number] = sample_volume
+            sample_moles[drawing_number] = sample_moles
 
     if 'cyl' in can:
         # Find sample weight
         sample_mass_cyl = pack_fraction
 
     if 'annular' in can:
-        # Find sample weight
-        sample_mass_annular = sample_volume*pack_fraction
+        for row in annular.iterrows():
+            # Find sample weight
+            sample_mass_annular = sample_volume*pack_fraction
     
     # Find penetration depth due to scattering in cm
     scatter_depth = unit_cell_volume/(scatter_xs*pack_fraction)
