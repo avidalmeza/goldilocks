@@ -178,7 +178,7 @@ def read_cif(filepath):
 
 # Define xs_calculator function; cross-section calculator
 def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annular'], can_material = 'aluminum', Z_param = None, a = None, b = None, c = None, alpha = None, beta = None, gamma = None):
-    # Define pattern
+    # Define pattern for validate_formula() function
     # Each element is followed by number of atoms for that element, specified without a hyphen; each element is separated from other elements using a hyphen
     # For isotopes, isotope must be enclosed by parenthesis; e.g., (Li7)
     mantid_format = r'^(\([A-Za-z][a-z]*\d*\)\d*|[A-Za-z][a-z]*\d*)(-[A-Za-z][a-z]*\d*|\([A-Za-z][a-z]*\d*\)\d*)*$'
@@ -266,8 +266,8 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
     sqrt_neutron_energy = np.sqrt(25/neutron_energy)
     absorb_xs_sqrt = absorb_xs*sqrt_neutron_energy
     
-    # Define empty dictionaries
-    sample_mass = {}
+    # Initialize empty dictionaries
+    sample_weight = {}
     sample_volume = {}
     sample_moles = {}
 
@@ -277,27 +277,28 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
             sample_volume = row['sample_volume']
 
             # Find sample weight
-            sample_mass = can_volume*pack_fraction
+            sample_weight = sample_volume*pack_fraction
         
             # Find sample volume in cc
-            sample_volume = sample_mass/theory_density/pack_fraction
+            sample_volume = sample_weight/theory_density/pack_fraction
 
             # Find number of moles of formula unit in sample
-            sample_moles = sample_mass/molecular_mass
+            sample_moles = sample_weight/molecular_mass
             
-            # Save to dictionaries
-            sample_mass[drawing_number] = sample_mass
+            # Populate dictionaries with `drawing_number`as key
+            sample_weight[drawing_number] = sample_weight
             sample_volume[drawing_number] = sample_volume
             sample_moles[drawing_number] = sample_moles
 
-    if 'cyl' in can:
-        # Find sample weight
-        sample_mass_cyl = pack_fraction
-
-    if 'annular' in can:
-        for row in annular.iterrows():
+    # if 'cyl' in can:
+        # for row in cylindrical.iterrows(): 
             # Find sample weight
-            sample_mass_annular = sample_volume*pack_fraction
+            # sample_mass_cylind = 0
+
+    # if 'annular' in can:
+        # for row in annular.iterrows():
+            # Find sample weight
+            # sample_mass_annular = sample_volume*pack_fraction
     
     # Find penetration depth due to scattering in cm
     scatter_depth = unit_cell_volume/(scatter_xs*pack_fraction)
@@ -311,26 +312,39 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
     # Find total penetration depth due to scattering and absorption in cm
     total_depth = unit_cell_volume/((scatter_xs + absorb_xs_sqrt)*pack_fraction)
     
+    # Initialize empty dictionaries
+    sample_thick = {}
+    percent_scatter = {}
+    percent_absorb = {}
+
     if 'flat' in can:
-        for can_volume in flat_plate['can_volume']:
+        for row in flat_plate.iterrows():
+            drawing_number = row['drawing_number']
+            sample_area = row['sample_area']
+
             # Find thickness of sample spread homogenously over sample can in cm
-            sample_thick_flat = sample_mass_flat/(pack_fraction*theory_density*can_volume) 
+            sample_thick_flat = sample_weight/(pack_fraction*theory_density*sample_area) 
     
             # Find percent of incident beam that is scattered (assume no absorption)
             percent_scatter_flat = 100 * (1-(np.exp(-(sample_thick_flat/scatter_depth))))
     
             # Find percent of incident beam that is absorbed (assume no scattering)
             percent_absorb_flat =  100 * (1-(np.exp(-(sample_thick_flat/absorb_depth))))
+            
+            # Populate dictionaries with `drawing_number`as key
+            sample_thick[drawing_number] = sample_thick_flat
+            percent_scatter[drawing_number] = percent_scatter_flat
+            percent_absorb[drawing_number] = percent_absorb_flat
 
-    if 'cyl' in can:
+    # if 'cyl' in can:
         # Find thickness of sample spread homogenously over sample can in cm
-        sample_thick_cyl = sample_mass_cyl/(pack_fraction*theory_density*can_volume) 
+        # sample_thick_cyl = sample_mass_cyl/(pack_fraction*theory_density*can_volume) 
     
         # Find percent of incident beam that is scattered (assume no absorption)
-        percent_scatter_cyl = 100 * (1-(np.exp(-(sample_thick_cyl/scatter_depth))))
+        # percent_scatter_cyl = 100 * (1-(np.exp(-(sample_thick_cyl/scatter_depth))))
     
         # Find percent of incident beam that is absorbed (assume no scattering)
-        percent_absorb_cyl =  100 * (1-(np.exp(-(sample_thick_cyl/absorb_depth))))
+        # percent_absorb_cyl =  100 * (1-(np.exp(-(sample_thick_cyl/absorb_depth))))
         
     # if 'annular' in can:
  
