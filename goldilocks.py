@@ -13,9 +13,9 @@ from mantid.kernel import Material
 this_dir = os.getcwd()
 
 # Read attributes for sample powder canisters
-flat_plate = pd.read_csv(os.path.join(this_dir, 'flatPlate.csv'))
-# cylindrical = pd.read_csv(os.path.join(this_dir, 'cylindrical.csv'))
-# annular = pd.read_csv(os.path.join(this_dir, 'annular.csv'))
+flat_plate = pd.read_csv(os.path.join(this_dir, 'dict', 'flatPlate.csv'))
+# cylindrical = pd.read_csv(os.path.join(this_dir, 'dict', 'cylindrical.csv'))
+# annular = pd.read_csv(os.path.join(this_dir, 'dict', 'annular.csv'))
 
 # Define remove_parentheses() function
 def remove_parentheses(i):
