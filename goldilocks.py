@@ -30,7 +30,6 @@ def validate_formula(format, formula):
     # Flag an error if formula (string) does not match format (pattern)
     if not re.fullmatch(format, formula):
         raise ValueError(f'The string does not match the accepted format.')
-    
     # Return `True` if formula (string) matches format (pattern), `False` otherwise
     return True
 
@@ -180,6 +179,9 @@ def read_cif(filepath):
 def xs_calculator(x, neutron_energy, pack_fraction, can = 'flat', can_material = 'aluminum', Z_param = None, a = None, b = None, c = None, alpha = None, beta = None, gamma = None):
     # can = ['flat', 'cyl', 'annular']
 
+    # Create empty data container/workspace
+    ws = CreateSampleWorkspace()
+
     # Define pattern for validate_formula() function
     # Each element is followed by number of atoms for that element, specified without a hyphen; each element is separated from other elements using a hyphen
     # For isotopes, isotope must be enclosed by parenthesis; e.g., (Li7)
@@ -218,9 +220,6 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = 'flat', can_material =
     # Check version for troubleshooting
     # mantid_version = mtd.__version__
     # print(mantid_version)
-
-    # Create empty data container/workspace
-    ws = CreateSampleWorkspace()
 
     # Check data container/workspace for troubleshooting
     # if ws.id() == 'Workspace2D':
@@ -264,12 +263,12 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = 'flat', can_material =
     # Find theoretical density in g/cc
     theory_density = molecular_mass/unit_cell_volume/0.6022
     
-    # Find absorption cross section per formula unit at given neutron energy in bn/fu
+    # Find absorption cross section per formula unit at given incident neutron energy in bn/fu
     sqrt_neutron_energy = np.sqrt(25/neutron_energy)
     absorb_xs_sqrt = absorb_xs*sqrt_neutron_energy
     
     # Initialize empty dictionaries
-    sample_weight = {}
+    sample_mass = {}
     sample_volume = {}
     sample_moles = {}
 
@@ -281,17 +280,17 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = 'flat', can_material =
             drawing_number = row['drawing_number']
             sample_volume = row['sample_volume']
 
-            # Find sample weight
-            sample_weight_flat = sample_volume*pack_fraction
+            # Find sample mass
+            sample_mass_flat = sample_volume*pack_fraction
         
             # Find sample volume in cc
-            sample_volume_flat = sample_weight_flat/theory_density/pack_fraction
+            sample_volume_flat = sample_mass_flat/theory_density/pack_fraction
 
             # Find number of moles of formula unit in sample
-            sample_moles_flat = sample_weight_flat/molecular_mass
+            sample_moles_flat = sample_mass_flat/molecular_mass
             
             # Populate dictionaries with `drawing_number` as key
-            sample_weight[drawing_number] = sample_weight_flat
+            sample_mass[drawing_number] = sample_mass_flat
             sample_volume[drawing_number] = sample_volume_flat
             sample_moles[drawing_number] = sample_moles_flat
 
@@ -299,19 +298,20 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = 'flat', can_material =
     # if 'cyl' in can:
         # Iterate over each row in DataFrame
         # for row in cylindrical.iterrows(): 
-            # Find sample weight
+            # Find sample mass
             # sample_mass_cylind = 0
 
     # Check if `annular` is in `can` parameter in xs_calculator() function
     # if 'annular' in can:
         # Iterate over each row in DataFrame
         # for row in annular.iterrows():
-            # Find sample weight
+            # Find sample mass
             # sample_mass_annular = sample_volume*pack_fraction
     
     # Find penetration depth due to scattering in cm
     scatter_depth = unit_cell_volume/(scatter_xs*pack_fraction)
 
+    # if 'flat in can: 
     # Find thickness of a 10 percent scatterer in cm
     scatter_thick = np.log(0.9)*scatter_depth
     
@@ -335,7 +335,7 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = 'flat', can_material =
             sample_area = row['sample_area']
 
             # Find thickness of sample spread homogenously over sample can in cm
-            sample_thick_flat = sample_weight[drawing_number]/(pack_fraction*theory_density*sample_area) 
+            sample_thick_flat = sample_mass[drawing_number]/(pack_fraction*theory_density*sample_area) 
     
             # Find percent of incident beam that is scattered (assume no absorption)
             percent_scatter_flat = 100 * (1-(np.exp(-(sample_thick_flat/scatter_depth))))
@@ -365,9 +365,29 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = 'flat', can_material =
         # Find percent of incident beam that is scattered (assume no absorption)
         # Find percent of incident beam that is absorbed (assume no scattering)
  
-    # Initialize `headers_1` and `headers_2` vectors
-    headers_1 = ['Drawing Number', 'Description', 'Mass Filled (g)', 'Scatter Depth (cm)', '% Scatter', 'Absorb Depth (cm)', '% Absorb']
-    headers_2 = ['Drawing Number', 'Description', 'Material Mass (g)', 'Scatter Depth (cm)', '% Scatter', 'Absorb Depth (cm)', '% Absorb']
+    # Initialize empty dictionary to hold flat data
+    flat_data = {
+        'drawing_number': [],
+        'sample_mass': [],
+        'sample_volume': [],
+        'sample_moles': [],
+        'sample_thick': [],
+        'percent_scatter': [],
+        'percent_absorb': []
+    }
+    
+    for id in drawing_number:
+        flat_data['drawing_number'].append(id)
+        flat_data['sample_mass'].append(sample_mass[id])
+        flat_data['sample_volume'].append(sample_volume[id])
+        flat_data['sample_moles'].append(sample_moles[id])
+        flat_data['sample_thick'].append(sample_thick[id])
+        flat_data['percent_scatter'].append(percent_scatter[id])
+        flat_data['percent_absorb'].append(percent_absorb[id])
+ 
+    # Create a DataFrame
+    df = pd.DataFrame(flat_data)
+    print(df)
 
     # Print sample information
     print(f'''
@@ -376,15 +396,20 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = 'flat', can_material =
     =============================
     Formula:          {mantid_formula}
     Z:                {Z_param:<10}
+    Lattice constants:
     Packing fraction: {pack_fraction:<10}
-    Neutron energy:   {neutron_energy:<10}
+    Incident neutron energy:   {neutron_energy:<10}
     ============================
     ''')
 
     # Print table headers
-    print(f'{headers_1[0]:<15} {headers_1[1]:<22} {headers_1[2]:<15} {headers_1[3]:<15} {headers_1[4]:<15} {headers_1[5]:<15} {headers_1[6]:<15}')
+    # print(f'{headers_1[0]:<15} {headers_1[1]:<22} {headers_1[2]:<15} {headers_1[3]:<15} {headers_1[4]:<15} {headers_1[5]:<15} {headers_1[6]:<15}')
 
     # Print separator line
-    print('-' * 120)
+    # print('-' * 120)
 
 # return scatter_depth, percent_scatter, absorb_depth, percent_absorb
+
+# 06-28-2024 test
+xs_calculator(x='/Users/avidalmeza/Documents/GitHub/goldilocks/cif/Ba2Co1La2O12Te2.cif', neutron_energy=5, pack_fraction=0.45)
+xs_calculator(x='Ba2Co1La2O12Te2', neutron_energy=5, pack_fraction=0.45, Z_param=3, a=5.69, b=5.69, c=27.58, alpha=90, beta=90, gamma=120)
