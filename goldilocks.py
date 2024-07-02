@@ -194,7 +194,7 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = 'flat', can_material =
     try:
         if x.endswith(file_extension) and os.path.isfile(x):
             # Extract mantid_formula, sample_n_density, total_n, a, b, c, alpha, beta, gamma with read_cif() function
-            read_cif(x)
+            mantid_formula, sample_n_density, total_n, a, b, c, alpha, beta, gamma = read_cif(x)
             
             # Define sample
             # Add material to data container/workspace
@@ -264,7 +264,7 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = 'flat', can_material =
     theory_density = molecular_mass/unit_cell_volume/0.6022
     
     # Find absorption cross section per formula unit at given incident neutron energy in bn/fu
-    sqrt_neutron_energy = np.sqrt(25/neutron_energy)
+    sqrt_neutron_energy = np.sqrt(25/float(neutron_energy))
     absorb_xs_sqrt = absorb_xs*sqrt_neutron_energy
     
     # Initialize empty dictionaries
@@ -275,7 +275,7 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = 'flat', can_material =
     # Check if `flat` is in `can` parameter in xs_calculator() function
     if 'flat' in can:
         # Iterate over each row in DataFrame
-        for row in flat_plate.iterrows():
+        for index, row in flat_plate.iterrows():
             # Extract `drawing_number` and `sample_volume` for each row
             drawing_number = row['drawing_number']
             sample_volume = row['sample_volume']
@@ -329,7 +329,7 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = 'flat', can_material =
     # Check if `flat` is in `can` parameter in xs_calculator() function
     if 'flat' in can:
         # Iterate over each row in DataFrame
-        for row in flat_plate.iterrows():
+        for index, row in flat_plate.iterrows():
             # Extract `drawing_number` and `sample_area` for each row
             drawing_number = row['drawing_number']
             sample_area = row['sample_area']
@@ -411,5 +411,5 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = 'flat', can_material =
 # return scatter_depth, percent_scatter, absorb_depth, percent_absorb
 
 # 06-28-2024 test
-xs_calculator(x='/Users/avidalmeza/Documents/GitHub/goldilocks/cif/Ba2Co1La2O12Te2.cif', neutron_energy=5, pack_fraction=0.45)
-xs_calculator(x='Ba2Co1La2O12Te2', neutron_energy=5, pack_fraction=0.45, Z_param=3, a=5.69, b=5.69, c=27.58, alpha=90, beta=90, gamma=120)
+xs_calculator(x='/Users/avidalmeza/Documents/GitHub/goldilocks/cif/Ba2Co1La2O12Te2.cif', neutron_energy = 5, pack_fraction = 0.45)
+# xs_calculator(x='Ba2Co1La2O12Te2', neutron_energy = 5, pack_fraction = 0.45, Z_param = 3, a = 5.69, b = 5.69, c = 27.58, alpha = 90, beta = 90, gamma = 120)
