@@ -13,9 +13,9 @@ from mantid.kernel import Material
 this_dir = os.getcwd()
 
 # Read attributes for sample powder cans
-flat_plate = pd.read_csv(os.path.join(this_dir, 'dict', 'flatPlate.csv'))
-cylindrical = pd.read_csv(os.path.join(this_dir, 'dict', 'cylindrical.csv'))
-annular = pd.read_csv(os.path.join(this_dir, 'dict', 'annular.csv'))
+flat_plate = pd.read_csv(os.path.join(this_dir, 'src', 'dict', 'flatPlate.csv'))
+cylindrical = pd.read_csv(os.path.join(this_dir, 'src', 'dict', 'cylindrical.csv'))
+annular = pd.read_csv(os.path.join(this_dir, 'src', 'dict', 'annular.csv'))
 
 # Define remove_parentheses() function
 def remove_parentheses(i):
@@ -364,52 +364,3 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = 'flat', can_material =
         # Find thickness of sample spread homogenously over sample can in cm
         # Find percent of incident beam that is scattered (assume no absorption)
         # Find percent of incident beam that is absorbed (assume no scattering)
- 
-    # Initialize empty dictionary to hold flat data
-    flat_data = {
-        'drawing_number': [],
-        'sample_mass': [],
-        'sample_volume': [],
-        'sample_moles': [],
-        'sample_thick': [],
-        'percent_scatter': [],
-        'percent_absorb': []
-    }
-    
-    for id in drawing_number:
-        flat_data['drawing_number'].append(id)
-        flat_data['sample_mass'].append(sample_mass[id])
-        flat_data['sample_volume'].append(sample_volume_dict[id])
-        flat_data['sample_moles'].append(sample_moles[id])
-        flat_data['sample_thick'].append(sample_thick[id])
-        flat_data['percent_scatter'].append(percent_scatter[id])
-        flat_data['percent_absorb'].append(percent_absorb[id])
- 
-    # Create a DataFrame
-    df = pd.DataFrame(flat_data)
-    print(df)
-
-    # Print sample information
-    print(f'''
-    =============================
-        Sample Information
-    =============================
-    Formula:          {mantid_formula}
-    Z:                {Z_param:<10}
-    Lattice constants:
-    Packing fraction: {pack_fraction:<10}
-    Incident neutron energy:   {neutron_energy:<10}
-    ============================
-    ''')
-
-    # Print table headers
-    # print(f'{headers_1[0]:<15} {headers_1[1]:<22} {headers_1[2]:<15} {headers_1[3]:<15} {headers_1[4]:<15} {headers_1[5]:<15} {headers_1[6]:<15}')
-
-    # Print separator line
-    # print('-' * 120)
-
-# return scatter_depth, percent_scatter, absorb_depth, percent_absorb
-
-cif_filepath = os.path.join(this_dir, 'cif', 'Ba2Co1La2O12Te2.cif')
-xs_calculator(x = cif_filepath, neutron_energy = 5, pack_fraction = 0.45)
-# xs_calculator(x = 'Ba2Co1La2O12Te2', neutron_energy = 5, pack_fraction = 0.45, Z_param = 3, a = 5.69, b = 5.69, c = 27.58, alpha = 90, beta = 90, gamma = 120)
