@@ -348,6 +348,23 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = 'flat', can_material =
             percent_scatter[drawing_number] = percent_scatter_flat
             percent_absorb[drawing_number] = percent_absorb_flat
 
+    # Convert dictionaries to DataFrames
+    dfs = {
+        'sample_mass': pd.DataFrame(sample_mass.items(), columns = ['drawing_number', 'sample_mass']),
+        'sample_volume': pd.DataFrame(sample_volume_dict.items(), columns = ['drawing_number', 'sample_volume']),
+        'sample_moles': pd.DataFrame(sample_moles.items(), columns = ['drawing_number', 'sample_moles']),
+        'sample_thick': pd.DataFrame(sample_thick.items(), columns = ['drawing_number', 'sample_thick']),
+        'percent_scatter': pd.DataFrame(percent_scatter.items(), columns = ['drawing_number', 'percent_scatter']),
+        'percent_absorb': pd.DataFrame(percent_absorb.items(), columns = ['drawing_number', 'percent_absorb'])
+    }
+
+    # Extract DataFrame `sample_mass`
+    df_1 = dfs['sample_mass']
+
+    # Merge DataFrames with a left join
+    for key in list(dfs.keys())[1:]:
+        df_1 = df_1.merge(dfs[key], on = 'drawing_number', how = 'left')
+
     # Check if `cyl` is in `can` parameter in xs_calculator() function
     # if 'cyl' in can:
         # Find thickness of sample spread homogenously over sample can in cm
@@ -364,3 +381,25 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = 'flat', can_material =
         # Find thickness of sample spread homogenously over sample can in cm
         # Find percent of incident beam that is scattered (assume no absorption)
         # Find percent of incident beam that is absorbed (assume no scattering)
+
+    # Print sample information
+    print(f'''
+    =============================
+        Sample Information
+    =============================
+    Formula:          {mantid_formula}
+    Z:                {Z_param:<10}
+    Lattice constants: {a:<10}, {b:<10}, {c:<10}
+    Mutual angles: {alpha:<10}, {beta:<10}, {gamma:<10}
+    Packing fraction: {pack_fraction:<10}
+    Incident neutron energy:   {neutron_energy:<10}
+    ============================
+    ''')
+
+    print(df_1)
+
+    # Print table headers
+    # print(f'{headers_1[0]:<15} {headers_1[1]:<22} {headers_1[2]:<15} {headers_1[3]:<15} {headers_1[4]:<15} {headers_1[5]:<15} {headers_1[6]:<15}')
+
+    # Print separator line
+    # print('-' * 120)
