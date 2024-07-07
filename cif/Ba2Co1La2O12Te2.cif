@@ -1,0 +1,92 @@
+
+#(C) 2024 by FIZ Karlsruhe - Leibniz Institute for Information Infrastructure.  All rights reserved.
+data_25273-ICSD
+_database_code_ICSD 25273
+_audit_creation_date 2021-08-01
+_chemical_name_common 'Dibarium dilanthanum cobalt bis(tellurate)'
+_chemical_formula_structural 'Ba2 La2 Co (Te O6)2'
+_chemical_formula_sum 'Ba2 Co1 La2 O12 Te2'
+_chemical_name_structure_type La4Ti3O12
+_exptl_crystal_density_diffrn 6.81
+_diffrn_ambient_temperature 300.
+_citation_title
+
+;
+Quantum magnetic properties of the spin-$\frac{1}2{ }$triangular-lattice
+antiferromagnet Ba$_2$La$_2$CoTe$_2$O$_{12}$
+;
+loop_
+_citation_id
+_citation_journal_full
+_citation_year
+_citation_journal_volume
+_citation_page_first
+_citation_page_last
+_citation_journal_id_ASTM
+primary 'Physical Review B' 2018 98 '' '' PRBHB7
+loop_
+_citation_author_citation_id
+_citation_author_name
+primary 'Kojima, Yuki'
+primary 'Watanabe, Masari'
+primary 'Kurita, Nobuyuki'
+primary 'Tanaka, Hidekazu'
+primary 'Matsuo, Akira'
+primary 'Kindo, Koichi'
+primary 'Avdeev, Maxim'
+_cell_length_a 5.693(2)
+_cell_length_b 5.693(2)
+_cell_length_c 27.585(6)
+_cell_angle_alpha 90.
+_cell_angle_beta 90.
+_cell_angle_gamma 120.
+_cell_volume 774.26
+_cell_formula_units_Z 3
+_space_group_name_H-M_alt 'R -3 H'
+_space_group_IT_number 148
+loop_
+_space_group_symop_id
+_space_group_symop_operation_xyz
+1 'x-y, x, -z'
+2 'y, -x+y, -z'
+3 '-x, -y, -z'
+4 '-x+y, -x, z'
+5 '-y, x-y, z'
+6 'x, y, z'
+7 'x-y+2/3, x+1/3, -z+1/3'
+8 'y+2/3, -x+y+1/3, -z+1/3'
+9 '-x+2/3, -y+1/3, -z+1/3'
+10 '-x+y+2/3, -x+1/3, z+1/3'
+11 '-y+2/3, x-y+1/3, z+1/3'
+12 'x+2/3, y+1/3, z+1/3'
+13 'x-y+1/3, x+2/3, -z+2/3'
+14 'y+1/3, -x+y+2/3, -z+2/3'
+15 '-x+1/3, -y+2/3, -z+2/3'
+16 '-x+y+1/3, -x+2/3, z+2/3'
+17 '-y+1/3, x-y+2/3, z+2/3'
+18 'x+1/3, y+2/3, z+2/3'
+loop_
+_atom_type_symbol
+_atom_type_oxidation_number
+Ba2+ 2
+La3+ 3
+Co2+ 2
+Te6+ 6
+O2- -2
+loop_
+_atom_site_label
+_atom_site_type_symbol
+_atom_site_symmetry_multiplicity
+_atom_site_Wyckoff_symbol
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+_atom_site_B_iso_or_equiv
+_atom_site_occupancy
+Ba1 Ba2+ 6 c 0 0 0.13680(3) 0.34(2) 1.
+La1 La3+ 6 c 0 0 0.28941(4) 0.24(3) 1.
+Co1 Co2+ 3 a 0 0 0 0.18(8) 1.
+Te1 Te6+ 6 c 0 0 0.41531(4) 0.20(2) 1.
+O1 O2- 18 f 0.459(2) 0.457(2) 0.1177(2) 0.6(1) 1.
+O2 O2- 18 f 0.441(2) 0.462(2) 0.2954(2) 0.6(1) 1.
+#End of TTdata_25273-ICSD
