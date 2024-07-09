@@ -173,7 +173,7 @@ def read_cif(filepath):
     # print('Total n:', total_n)
     
     # Return mantid_formula, sample_n_density, total_n, a, b, c, alpha, beta, gamma
-    return mantid_formula, sample_n_density, total_n, a, b, c, alpha, beta, gamma
+    return mantid_formula, sample_n_density, total_n, a, b, c, alpha, beta, gamma, Z_param
 
 # Define xs_calculator function; cross-section calculator
 def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl'], can_material = 'aluminum', Z_param = None, a = None, b = None, c = None, alpha = None, beta = None, gamma = None):
@@ -189,13 +189,13 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl'], can_m
     file_extension = '.cif'
 
     # Initialize to avoid UnboundLocalError
-    # total_n = 0
+    total_n = 0
 
     # Check if x is a filepath for a CIF
     try:
         if x.endswith(file_extension) and os.path.isfile(x):
             # Extract mantid_formula, sample_n_density, total_n, a, b, c, alpha, beta, gamma with read_cif() function
-            mantid_formula, sample_n_density, total_n, a, b, c, alpha, beta, gamma = read_cif(x)
+            mantid_formula, sample_n_density, total_n, a, b, c, alpha, beta, gamma, Z_param = read_cif(x)
             
             # Define sample
             # Add material to data container/workspace
@@ -272,7 +272,6 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl'], can_m
     sample_mass = {}
     sample_volume_dict = {}
     sample_moles = {}
-    can_volume = {}
 
     # Check if `flat` is in `can` parameter in xs_calculator() function
     if 'flat' in can:
@@ -297,39 +296,44 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl'], can_m
             sample_moles[drawing_number] = sample_moles_flat
 
     # Check if `cyl` is in `can` parameter in xs_calculator() function
-    if 'cyl' in can:
-        # Iterate over each row in DataFrame
-        for index, row in cylindrical.iterrows():
-            # Extract `drawing_number`, `sample_volume`, `can_inner_radius`, and `sample_height` for each row
-            drawing_number = row['drawing_number']
-            sample_volume_value = row['sample_volume']
-            can_inner_radius = row['can_inner_radius']
-            sample_height = row['sample_height']
+    # if 'cyl' in can:
+    #     # Iterate over each row in DataFrame
+    #     for index, row in cylindrical.iterrows():
+    #         # Extract `drawing_number`, `sample_volume`, `can_inner_radius`, and `sample_height` for each row
+    #         drawing_number = row['drawing_number']
+    #         sample_volume_value = row['sample_volume']
+    #         can_inner_radius = row['can_inner_radius']
+    #         sample_height = row['sample_height']
 
-            # Find sample mass
-            sample_mass_cyl = sample_volume_value*pack_fraction
+    #          # Find can volume
+    #         sample_volume_cyl = np.pi*(can_inner_radius**2)*sample_height
 
-            # Find sample volume in cc
-            sample_volume_cyl = sample_mass_cyl/theory_density/pack_fraction
+    #         print(sample_volume_cyl)
 
-            # Find can volume
-            can_volume_cyl = np.pi * (can_inner_radius**2) * sample_height
+    #         # Find sample mass
+    #         sample_mass_cyl = sample_volume_value*pack_fraction
 
-            # Find number of moles of formula unit in sample
-            sample_moles_cyl = sample_mass_cyl/molecular_mass
+    #         # Find sample volume in cc
+    #         # sample_volume_cyl = sample_mass_cyl/theory_density/pack_fraction
 
-            # Populate dictionaries with `drawing_number` as key
-            sample_mass[drawing_number] = sample_mass_cyl
-            sample_volume_dict[drawing_number] = sample_volume_cyl
-            sample_moles[drawing_number] = sample_moles_cyl
-            can_volume[drawing_number] = can_volume_cyl
+    #         # Find number of moles of formula unit in sample
+    #         sample_moles_cyl = sample_mass_cyl/molecular_mass
+
+    #         # Populate dictionaries with `drawing_number` as key
+    #         sample_mass[drawing_number] = sample_mass_cyl
+    #         sample_volume_dict[drawing_number] = sample_volume_cyl
+    #         sample_moles[drawing_number] = sample_moles_cyl
+    #         # can_volume[drawing_number] = sample_volume_cyl
 
     # Check if `annular` is in `can` parameter in xs_calculator() function
     # if 'annular' in can:
         # Iterate over each row in DataFrame
-        # for row in annular.iterrows():
+        # for index, row in annular.iterrows():
             # Find sample mass
             # sample_mass_annular = sample_volume*pack_fraction
+            
+            # Find annulus area 
+            # sample_area_annular = (np.pi*(sample_outer_radius)**2) - (np.pi*(sample_inner_radius)**2) # OJO: ASK MATT
     
     # Find penetration depth due to scattering in cm
     scatter_depth = unit_cell_volume/(scatter_xs * pack_fraction)
@@ -380,15 +384,15 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl'], can_m
             percent_absorb[drawing_number] = percent_absorb_flat
 
     # Check if `cyl` is in `can` parameter in xs_calculator() function
-    if 'cyl' in can:
+    # if 'cyl' in can:
         # Find thickness of sample spread homogenously over sample can in cm
-        sample_thick_cyl = sample_mass_cyl/(pack_fraction*theory_density*can_volume) 
+        # sample_thick_cyl = sample_mass_cyl/(pack_fraction*theory_density*can_volume) 
     
         # Find percent of incident beam that is scattered (assume no absorption)
-        percent_scatter_cyl = 100 * (1-(np.exp(-(sample_thick_cyl/scatter_depth))))
+        # percent_scatter_cyl = 100 * (1-(np.exp(-(sample_thick_cyl/scatter_depth))))
     
         # Find percent of incident beam that is absorbed (assume no scattering)
-        percent_absorb_cyl =  100 * (1-(np.exp(-(sample_thick_cyl/absorb_depth))))
+        # percent_absorb_cyl =  100 * (1-(np.exp(-(sample_thick_cyl/absorb_depth))))
     
     # Check if `annular` is in `can` parameter in xs_calculator() function
     # if 'annular' in can:
@@ -421,14 +425,14 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl'], can_m
     =============================
     Formula:          {mantid_formula}
     Z:                {Z_param}
-    Lattice constant (a): {a}
-    Lattice constant (b):  {b}
-    Lattice constant (c): {c}
-    Mutual angle (alpha): {alpha}
-    Mutual angle (beta): {beta}
-    Mutual angle (gamma): {gamma}
+    Lattice constant (a): ∠{a}
+    Lattice constant (b): ∠{b}
+    Lattice constant (c): ∠{c}
+    Mutual angle (alpha): {alpha}°
+    Mutual angle (beta): {beta}°
+    Mutual angle (gamma): {gamma}°
     Packing fraction: {pack_fraction}
-    Incident neutron energy:   {neutron_energy}
+    Incident neutron energy:   {neutron_energy} meV
     ============================
     ''')
 
@@ -438,4 +442,5 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl'], can_m
 cif_filepath = os.path.join(this_dir, 'src', 'cif', 'Ba2Co1La2O12Te2.cif')
 xs_calculator(x = cif_filepath, neutron_energy = 5, pack_fraction = 0.45)
 
-xs_calculator(x = 'Ba2-Co1-La2-O12-Te2', neutron_energy = 5, pack_fraction = 0.45, Z_param = 3, a = 5.69, b = 5.69, c = 27.58, alpha = 90, beta = 90, gamma = 120)
+# str = 'Ba2-Co1-La2-O12-Te2'
+# xs_calculator(x = str, neutron_energy = 5, pack_fraction = 0.45, Z_param = 3, a = 5.69, b = 5.69, c = 27.58, alpha = 90, beta = 90, gamma = 120)
