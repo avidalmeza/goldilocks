@@ -196,6 +196,17 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl'], can_m
         if x.endswith(file_extension) and os.path.isfile(x):
             # Extract mantid_formula, sample_n_density, total_n, a, b, c, alpha, beta, gamma with read_cif() function
             mantid_formula, sample_n_density, total_n, a, b, c, alpha, beta, gamma, Z_param = read_cif(x)
+
+            # Convert string values to floats
+            a = float(a)
+            b = float(b)
+            c = float(c)
+            alpha = float(alpha)
+            beta = float(beta)
+            gamma = float(gamma)
+    
+            # Find unit cell volume in A^3
+            unit_cell_volume = a * b * c * np.sqrt(1-np.cos(alpha * np.pi/180)**2 - np.cos(beta * np.pi/180)**2 - np.cos(gamma * np.pi/180)**2 + 2*np.cos(alpha * np.pi/180) * np.cos(beta * np.pi/180) * np.cos(gamma * np.pi/180))
             
             # Define sample
             # Add material to data container/workspace
@@ -211,10 +222,22 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl'], can_m
             # Define total_n if `True` with sum_total_n() function
             total_n = sum_total_n(mantid_formula)
 
+            # Convert string values to floats
+            a = float(a)
+            b = float(b)
+            c = float(c)
+            alpha = float(alpha)
+            beta = float(beta)
+            gamma = float(gamma)
+    
+            # Find unit cell volume in A^3
+            unit_cell_volume = a * b * c * np.sqrt(1-np.cos(alpha * np.pi/180)**2 - np.cos(beta * np.pi/180)**2 - np.cos(gamma * np.pi/180)**2 + 2*np.cos(alpha * np.pi/180) * np.cos(beta * np.pi/180) * np.cos(gamma * np.pi/180))
+    
             # Define sample
             # Add material to data container/workspace
             SetSample(ws, Material = {'ChemicalFormula': mantid_formula,
-                                      'ZParameter': Z_param})
+                                      'UnitCellVolume': float(unit_cell_volume),
+                                      'ZParameter': float(Z_param)})
         else:
             print(f'{x} cannot be added to workspace. It does not match the accepted format nor is it a CIF.')
 
@@ -251,15 +274,15 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl'], can_m
     # print(f'Relative molecular mass: {molecular_mass}')
 
     # Convert string values to floats
-    a = float(a)
-    b = float(b)
-    c = float(c)
-    alpha = float(alpha)
-    beta = float(beta)
-    gamma = float(gamma)
+    # a = float(a)
+    # b = float(b)
+    # c = float(c)
+    # alpha = float(alpha)
+    # beta = float(beta)
+    # gamma = float(gamma)
     
     # Find unit cell volume in A^3
-    unit_cell_volume = a * b * c * np.sqrt(1-np.cos(alpha * np.pi/180)**2 - np.cos(beta * np.pi/180)**2 - np.cos(gamma * np.pi/180)**2 + 2*np.cos(alpha * np.pi/180) * np.cos(beta * np.pi/180) * np.cos(gamma * np.pi/180))
+    # unit_cell_volume = a * b * c * np.sqrt(1-np.cos(alpha * np.pi/180)**2 - np.cos(beta * np.pi/180)**2 - np.cos(gamma * np.pi/180)**2 + 2*np.cos(alpha * np.pi/180) * np.cos(beta * np.pi/180) * np.cos(gamma * np.pi/180))
     
     # Find theoretical density in g/cc
     theory_density = molecular_mass/unit_cell_volume/0.6022
@@ -297,33 +320,22 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl'], can_m
 
     # Check if `cyl` is in `can` parameter in xs_calculator() function
     # if 'cyl' in can:
-    #     # Iterate over each row in DataFrame
-    #     for index, row in cylindrical.iterrows():
-    #         # Extract `drawing_number`, `sample_volume`, `can_inner_radius`, and `sample_height` for each row
-    #         drawing_number = row['drawing_number']
-    #         sample_volume_value = row['sample_volume']
-    #         can_inner_radius = row['can_inner_radius']
-    #         sample_height = row['sample_height']
+    # Iterate over each row in DataFrame
+    #for index, row in cylindrical.iterrows():
+            # Extract `drawing_number` and `sample_volume` for each row
+            # drawing_number = row['drawing_number']
+            # sample_volume_value = row['sample_volume']
 
-    #          # Find can volume
-    #         sample_volume_cyl = np.pi*(can_inner_radius**2)*sample_height
+            # Find sample mass
+            # sample_mass_cyl = sample_volume_value*pack_fraction
 
-    #         print(sample_volume_cyl)
+            # Find number of moles of formula unit in sample
+            # sample_moles_cyl = sample_mass_cyl/molecular_mass
 
-    #         # Find sample mass
-    #         sample_mass_cyl = sample_volume_value*pack_fraction
-
-    #         # Find sample volume in cc
-    #         # sample_volume_cyl = sample_mass_cyl/theory_density/pack_fraction
-
-    #         # Find number of moles of formula unit in sample
-    #         sample_moles_cyl = sample_mass_cyl/molecular_mass
-
-    #         # Populate dictionaries with `drawing_number` as key
-    #         sample_mass[drawing_number] = sample_mass_cyl
-    #         sample_volume_dict[drawing_number] = sample_volume_cyl
-    #         sample_moles[drawing_number] = sample_moles_cyl
-    #         # can_volume[drawing_number] = sample_volume_cyl
+            # Populate dictionaries with `drawing_number` as key
+            # sample_mass[drawing_number] = sample_mass_cyl
+            # sample_moles[drawing_number] = sample_moles_cyl
+            # sample_volume_dict[drawing_number] = sample_volume_value
 
     # Check if `annular` is in `can` parameter in xs_calculator() function
     # if 'annular' in can:
@@ -333,7 +345,7 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl'], can_m
             # sample_mass_annular = sample_volume*pack_fraction
             
             # Find annulus area 
-            # sample_area_annular = (np.pi*(sample_outer_radius)**2) - (np.pi*(sample_inner_radius)**2) # OJO: ASK MATT
+            # sample_area_annular = (np.pi*(sample_outer_radius)**2) - (np.pi*(sample_inner_radius)**2)
     
     # Find penetration depth due to scattering in cm
     scatter_depth = unit_cell_volume/(scatter_xs * pack_fraction)
@@ -370,7 +382,7 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl'], can_m
             # print(f'sample_area: {sample_area}')
 
             # Find thickness of sample spread homogenously over sample can in cm
-            sample_thick_flat = sample_mass_i/(pack_fraction*theory_density*sample_area) 
+            sample_thick_flat = sample_mass_i/(pack_fraction*theory_density*sample_area) # UPDATE
     
             # Find percent of incident beam that is scattered (assume no absorption)
             percent_scatter_flat = 100 * (1-(np.exp(-(sample_thick_flat/scatter_depth))))
