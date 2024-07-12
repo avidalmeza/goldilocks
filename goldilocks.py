@@ -16,6 +16,7 @@ this_dir = os.getcwd()
 flat_plate = pd.read_csv(os.path.join(this_dir, 'src', 'dict', 'flatPlate.csv'))
 cylindrical = pd.read_csv(os.path.join(this_dir, 'src', 'dict', 'cylindrical.csv'))
 annular = pd.read_csv(os.path.join(this_dir, 'src', 'dict', 'annular.csv'))
+cans_desc = pd.read_csv(os.path.join(this_dir, 'src', 'dict', 'can_description.csv'))
 
 # Define remove_parentheses() function
 def remove_parentheses(i):
@@ -256,12 +257,13 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl'], can_m
     sample = ws.sample()
 
     # Retrieve absorption cross-section
-    absorb_xs = float(sample.getMaterial().absorbXSection() * total_n)
+    # Define absorption cross section per formula unit in bn/fu
+    absorb_xs = (float(sample.getMaterial().absorbXSection()*total_n))*np.sqrt(25/neutron_energy)
     # print(f'Absorption cross-section: {absorb_xs}')
 
     # Retrieve total scattering cross-section
     # Define scattering cross section per formula unit in bn/fu
-    scatter_xs = float(sample.getMaterial().totalScatterXSection() * total_n)
+    scatter_xs = float(sample.getMaterial().totalScatterXSection()*total_n)
     # print(f'Total scattering cross-section: {scatter_xs}')
 
     # Retrieve coherent scattering length
@@ -288,34 +290,31 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl'], can_m
     theory_density = molecular_mass/unit_cell_volume/0.6022
     
     # Find absorption cross section per formula unit at given incident neutron energy in bn/fu
-    sqrt_neutron_energy = np.sqrt(25/float(neutron_energy))
-    absorb_xs_sqrt = absorb_xs*sqrt_neutron_energy
+    # sqrt_neutron_energy = np.sqrt(25/float(neutron_energy))
+    # absorb_xs_sqrt = absorb_xs*sqrt_neutron_energy
     
     # Initialize empty dictionaries
     sample_mass = {}
-    sample_volume_dict = {}
+    can_volume_dict = {}
     sample_moles = {}
 
     # Check if `flat` is in `can` parameter in xs_calculator() function
     if 'flat' in can:
         # Iterate over each row in DataFrame
         for index, row in flat_plate.iterrows():
-            # Extract `drawing_number` and `sample_volume` for each row
+            # Extract `drawing_number` and `can_volume` for each row
             drawing_number = row['drawing_number']
-            sample_volume_value = row['sample_volume']
+            can_volume_value = row['can_volume']/1000 # in cm^3
 
-            # Find sample mass
-            sample_mass_flat = sample_volume_value*pack_fraction
+            # Find sample mass in grams
+            sample_mass_flat = can_volume_value*theory_density*pack_fraction
         
-            # Find sample volume in cc
-            sample_volume_flat = sample_mass_flat/theory_density/pack_fraction
-
             # Find number of moles of formula unit in sample
-            sample_moles_flat = sample_mass_flat/molecular_mass
+            sample_moles_flat = (sample_mass_flat/molecular_mass)*1000
             
             # Populate dictionaries with `drawing_number` as key
             sample_mass[drawing_number] = sample_mass_flat
-            sample_volume_dict[drawing_number] = sample_volume_flat
+            can_volume_dict[drawing_number] = can_volume_value
             sample_moles[drawing_number] = sample_moles_flat
 
     # Check if `cyl` is in `can` parameter in xs_calculator() function
@@ -354,10 +353,10 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl'], can_m
     scatter_thick = np.log(0.9)*scatter_depth
     
     # Find penetration depth due to absorption in cm
-    absorb_depth = unit_cell_volume/(absorb_xs_sqrt * pack_fraction)
+    absorb_depth = unit_cell_volume/(absorb_xs * pack_fraction)
     
     # Find total penetration depth due to scattering and absorption in cm
-    total_depth = unit_cell_volume/((scatter_xs + absorb_xs_sqrt) * pack_fraction)
+    total_depth = unit_cell_volume/((scatter_xs + absorb_xs) * pack_fraction)
 
     # Initialize empty dictionaries
     sample_thick = {}
@@ -372,6 +371,9 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl'], can_m
             drawing_number = row['drawing_number']
             sample_area = row['sample_area']
 
+            # Find thickness of sample spread homogenously over sample can in mm
+            sample_thick_flat = row['sample_thick']/10
+
             # Extract sample mass from dictionary
             sample_mass_i = sample_mass.get(drawing_number)
 
@@ -380,9 +382,6 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl'], can_m
             # print(f'pack_fraction: {pack_fraction}')
             # print(f'theory_density: {theory_density}')
             # print(f'sample_area: {sample_area}')
-
-            # Find thickness of sample spread homogenously over sample can in cm
-            sample_thick_flat = sample_mass_i/(pack_fraction*theory_density*sample_area) # UPDATE
     
             # Find percent of incident beam that is scattered (assume no absorption)
             percent_scatter_flat = 100 * (1-(np.exp(-(sample_thick_flat/scatter_depth))))
@@ -416,7 +415,7 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl'], can_m
     # Create dictionary `df_dict` of DataFrames
     df_dict = {
         'sample_mass': pd.DataFrame(sample_mass.items(), columns = ['drawing_number', 'sample_mass']),
-        'sample_volume': pd.DataFrame(sample_volume_dict.items(), columns = ['drawing_number', 'sample_volume']),
+        'can_volume': pd.DataFrame(can_volume_dict.items(), columns = ['drawing_number', 'can_volume']),
         'sample_moles': pd.DataFrame(sample_moles.items(), columns = ['drawing_number', 'sample_moles']),
         'sample_thick': pd.DataFrame(sample_thick.items(), columns = ['drawing_number', 'sample_thick']),
         'percent_scatter': pd.DataFrame(percent_scatter.items(), columns = ['drawing_number', 'percent_scatter']),
@@ -426,9 +425,15 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl'], can_m
     # Extract DataFrame `sample_mass` from dictionary
     df = df_dict['sample_mass']
 
-    # Merge DataFrames with a left join
+    # Merge with left join on `drawing_number`
     for key in list(df_dict.keys())[1:]:
         df = df.merge(df_dict[key], on = 'drawing_number', how = 'left')
+
+    # Merge with left join on `drawing_number`
+    df_concat = pd.merge(cans_desc, df, on = 'drawing_number', how = 'left')
+
+    # Drop `drawing_number` column
+    df_concat.drop('drawing_number', axis = 1, inplace = True)
 
     # Print sample information
     print(f'''
@@ -437,22 +442,37 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl'], can_m
     =============================
     Formula:          {mantid_formula}
     Z:                {Z_param}
-    Lattice constant (a): ∠{a}
-    Lattice constant (b): ∠{b}
-    Lattice constant (c): ∠{c}
-    Mutual angle (alpha): {alpha}°
-    Mutual angle (beta): {beta}°
-    Mutual angle (gamma): {gamma}°
+    Lattice constant (a): {a} Å
+    Lattice constant (b): {b} Å
+    Lattice constant (c): {c} Å
+    Lattice constant (alpha): {alpha}°
+    Lattice constant (beta): {beta}°
+    Lattice constant (gamma): {gamma}°
     Packing fraction: {pack_fraction}
     Incident neutron energy:   {neutron_energy} meV
     ============================
     ''')
 
-    # Print DataFrame
-    print(df)
+    # Print sample can independent information
+    print(f'''
+    =========================================
+        Sample Can Independent Values
+    =========================================
+    Calculated unit cell volume (\Angs^3): {round(unit_cell_volume, 3)}
+    Scattering cross section (bn/fu): {round(scatter_xs, 3)}
+    Absorption cross section (bn/fu): {round(absorb_xs, 3)}
+    Scattering penetration depth (cm): {round(scatter_depth, 3)}
+    Absorption penetration depth (cm): {round(absorb_depth, 3)}
+    Total peneteration depth (cm):  {round(total_depth, 3)}
+    Calculated sample density (g/cc): {round(theory_density, 3)}
+    ==========================================
+    ''')
 
-cif_filepath = os.path.join(this_dir, 'src', 'cif', 'Ba2Co1La2O12Te2.cif')
-xs_calculator(x = cif_filepath, neutron_energy = 5, pack_fraction = 0.45)
+    print(df_concat)
+    # print(df)
+
+# cif_filepath = os.path.join(this_dir, 'src', 'cif', 'Ba2Co1La2O12Te2.cif')
+# xs_calculator(x = cif_filepath, neutron_energy = 5, pack_fraction = 0.45)
 
 # str = 'Ba2-Co1-La2-O12-Te2'
 # xs_calculator(x = str, neutron_energy = 5, pack_fraction = 0.45, Z_param = 3, a = 5.69, b = 5.69, c = 27.58, alpha = 90, beta = 90, gamma = 120)
