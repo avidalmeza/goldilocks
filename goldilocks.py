@@ -16,7 +16,7 @@ this_dir = os.getcwd()
 flat_plate = pd.read_csv(os.path.join(this_dir, 'src', 'dict', 'flatPlate.csv'))
 cylindrical = pd.read_csv(os.path.join(this_dir, 'src', 'dict', 'cylindrical.csv'))
 annular = pd.read_csv(os.path.join(this_dir, 'src', 'dict', 'annular.csv'))
-cans_desc = pd.read_csv(os.path.join(this_dir, 'src', 'dict', 'can_description.csv'))
+cans_desc = pd.read_csv(os.path.join(this_dir, 'src', 'dict', 'canDescription.csv'))
 
 # Define remove_parentheses() function
 def remove_parentheses(i):
