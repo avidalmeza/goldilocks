@@ -8,6 +8,7 @@ import CifFile
 import mantid as mtd
 from mantid.simpleapi import CreateSampleWorkspace, SetSample
 from mantid.kernel import Material
+from scipy import integrate
 
 # Obtain current working directory filepath
 this_dir = os.getcwd()
@@ -44,6 +45,17 @@ def sum_total_n(i):
     
     # Return total sum
     return total_sum
+
+# Define add_parentheses_to_isotopes() function
+def add_parentheses_to_isotopes(x, isotopes):
+    for i in isotopes:
+        # Define regular expression for given element followed by digits, for isotopes that are not already inside parentheses
+        regex = fr'(?<!\()({i}\d+)(?!\))'
+        # Substitute matched pattern with itself wrapped in parentheses
+        x = re.sub(regex, r'(\1)', x)
+    # Replace spaces with hyphens
+    #x = x.replace(' ', '-')
+    return x
 
 # Define read_cif() function
 def read_cif(filepath):
@@ -177,7 +189,7 @@ def read_cif(filepath):
     return mantid_formula, sample_n_density, total_n, a, b, c, alpha, beta, gamma, Z_param
 
 # Define xs_calculator function; cross-section calculator
-def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl'], can_material = 'aluminum', Z_param = None, a = None, b = None, c = None, alpha = None, beta = None, gamma = None):
+def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl'], can_material = 'aluminum', isotope = False, element = None, Z_param = None, a = None, b = None, c = None, alpha = None, beta = None, gamma = None):
     # Create empty data container/workspace
     ws = CreateSampleWorkspace()
 
@@ -198,17 +210,9 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl'], can_m
             # Extract mantid_formula, sample_n_density, total_n, a, b, c, alpha, beta, gamma with read_cif() function
             mantid_formula, sample_n_density, total_n, a, b, c, alpha, beta, gamma, Z_param = read_cif(x)
 
-            # Convert string values to floats
-            a = float(a)
-            b = float(b)
-            c = float(c)
-            alpha = float(alpha)
-            beta = float(beta)
-            gamma = float(gamma)
+            if isotope == True:
+                mantid_formula = add_parentheses_to_isotopes(mantid_formula, element)
     
-            # Find unit cell volume in A^3
-            unit_cell_volume = a * b * c * np.sqrt(1-np.cos(alpha * np.pi/180)**2 - np.cos(beta * np.pi/180)**2 - np.cos(gamma * np.pi/180)**2 + 2*np.cos(alpha * np.pi/180) * np.cos(beta * np.pi/180) * np.cos(gamma * np.pi/180))
-            
             # Define sample
             # Add material to data container/workspace
             SetSample(ws, Material = {'ChemicalFormula': mantid_formula,
@@ -276,15 +280,15 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl'], can_m
     # print(f'Relative molecular mass: {molecular_mass}')
 
     # Convert string values to floats
-    # a = float(a)
-    # b = float(b)
-    # c = float(c)
-    # alpha = float(alpha)
-    # beta = float(beta)
-    # gamma = float(gamma)
+    a = float(a)
+    b = float(b)
+    c = float(c)
+    alpha = float(alpha)
+    beta = float(beta)
+    gamma = float(gamma)
     
     # Find unit cell volume in A^3
-    # unit_cell_volume = a * b * c * np.sqrt(1-np.cos(alpha * np.pi/180)**2 - np.cos(beta * np.pi/180)**2 - np.cos(gamma * np.pi/180)**2 + 2*np.cos(alpha * np.pi/180) * np.cos(beta * np.pi/180) * np.cos(gamma * np.pi/180))
+    unit_cell_volume = a * b * c * np.sqrt(1-np.cos(alpha * np.pi/180)**2 - np.cos(beta * np.pi/180)**2 - np.cos(gamma * np.pi/180)**2 + 2*np.cos(alpha * np.pi/180) * np.cos(beta * np.pi/180) * np.cos(gamma * np.pi/180))
     
     # Find theoretical density in g/cc
     theory_density = molecular_mass/unit_cell_volume/0.6022
@@ -471,8 +475,5 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl'], can_m
     print(df_concat)
     # print(df)
 
-# cif_filepath = os.path.join(this_dir, 'src', 'cif', 'Ba2Co1La2O12Te2.cif')
-# xs_calculator(x = cif_filepath, neutron_energy = 5, pack_fraction = 0.45)
-
-# str = 'Ba2-Co1-La2-O12-Te2'
-# xs_calculator(x = str, neutron_energy = 5, pack_fraction = 0.45, Z_param = 3, a = 5.69, b = 5.69, c = 27.58, alpha = 90, beta = 90, gamma = 120)
+cif_filepath = os.path.join(this_dir, 'src', 'cif', 'Li5p5_PS4p5_Cl1p5_ICSD_CollCode22269.cif')
+xs_calculator(x = cif_filepath, neutron_energy = 100, pack_fraction = 0.5, isotope = True, element = ['Li'])
