@@ -8,6 +8,7 @@ import CifFile
 import mantid as mtd
 from mantid.simpleapi import CreateSampleWorkspace, SetSample
 from mantid.kernel import Material
+from scipy import integrate
 
 # Obtain current working directory filepath
 this_dir = os.getcwd()
@@ -15,7 +16,7 @@ this_dir = os.getcwd()
 # Read attributes for sample powder cans
 flat_plate = pd.read_csv(os.path.join(this_dir, 'src', 'dict', 'flatPlate.csv'))
 cylindrical = pd.read_csv(os.path.join(this_dir, 'src', 'dict', 'cylindrical.csv'))
-annular = pd.read_csv(os.path.join(this_dir, 'src', 'dict', 'annular.csv'))
+annulus = pd.read_csv(os.path.join(this_dir, 'src', 'dict', 'annulus.csv'))
 cans_desc = pd.read_csv(os.path.join(this_dir, 'src', 'dict', 'canDescription.csv'))
 
 # Define remove_parentheses() function
@@ -112,8 +113,9 @@ def read_cif(filepath):
 
     # Define regular expression pattern for dictionary
     # Group 1: [A-Za-z] matches any uppercase (A-Z) or lowercase (a-z) letter
-    # Group 2: (\d+), where \d matches any digit (0-9) 
-    pattern = re.compile(r'([A-Za-z]+)(\d+)')
+    # Group 2: (\d+), where \d matches any digit (0-9), possibly with a decimal
+    # pattern = re.compile(r'([A-Za-z]+)(\d+)')
+    pattern = re.compile(r'([A-Za-z]+)(\d+(\.\d+)?)')
 
     # Iterate through each element; return both index (i) and string for each element in chemical formula
     for i, string in enumerate(formula_split):
@@ -140,23 +142,23 @@ def read_cif(filepath):
         # print(f'{key}: {value}')
 
     # Initialize empty array
-    array = []
+    # array = []
 
     # Iterate over each item in dictionary
-    for key, value in elements.items():
+    # for key, value in elements.items():
         # Retrieve element symbol and numbers per formula units 
-        symbol = value['symbol']
-        n_fu = value['n_fu']
+    #    symbol = value['symbol']
+    #    n_fu = value['n_fu']
 
         # Concatenate and append to array
-        concatenate = f'{symbol}{n_fu}'
-        array.append(concatenate)
+    #    concatenate = f'{symbol}{n_fu}'
+    #    array.append(concatenate)
 
     # Print array for troubleshooting
     # print(array)
 
     # Concatenate array to string
-    mantid_formula = '-'.join([str(i) for i in array])
+    # mantid_formula = '-'.join([str(i) for i in array])
 
     # Print string for troubleshooting
     # print(mantid_formula)
@@ -173,11 +175,92 @@ def read_cif(filepath):
     # Print total n
     # print('Total n:', total_n)
     
-    # Return mantid_formula, sample_n_density, total_n, a, b, c, alpha, beta, gamma
-    return mantid_formula, sample_n_density, total_n, a, b, c, alpha, beta, gamma, Z_param
+    # Return sample_n_density, total_n, elements a, b, c, alpha, beta, gamma
+    return sample_n_density, total_n, elements, a, b, c, alpha, beta, gamma, Z_param
+
+# Define update_with_isotopes() function
+def update_with_isotopes(dictionary, isotopes, isotopes_pct, Z_param):
+    # Define regular expression pattern to match element symbol (letters only)
+    element_pattern = re.compile(r'([A-Za-z]+)')
+    
+    # Initialize empty array
+    # `elements_to_check` stores element symbol
+    # (e.g., for "Li7", add "Li" to `elements_to_check`)
+    elements_to_check = []
+
+    # Enumerate and iterate over each isotope in isotopes
+    for i, isotope in enumerate(isotopes):
+        # Match isotope against regular expression pattern
+        match = element_pattern.match(isotope)
+
+        # Check object is not `None`
+        if match:
+            # Extract element symbol
+            # (e.g., "Li" from "Li7")
+            element_symbol = match.group(1)
+            
+            # Check element symbol exists in dictionary
+            for key, value in dictionary.items():
+                if value['symbol'] == element_symbol:
+                    # Store original element symbol for later removal from dictionary
+                    elements_to_check.append(element_symbol)
+
+                    # Add parantheses around isotope
+                    new_symbol = f'({isotope})'
+
+                    # Add if/elif case for special cases
+                    if new_symbol == '(H2)':
+                        # Replace hydrogen-2 with deuterium
+                        new_symbol = 'D'
+                    elif new_symbol == '(H3)':
+                        # Replace hydrogen-3 with tritium
+                        new_symbol = 'T'
+                    
+                    # Find new subscript (percentage of element is isotope)
+                    subscript = float(value['subscript']) * isotopes_pct[i]
+
+                    # Find how many numbers per formula units
+                    n_fu = round(subscript * float(Z_param), 3)
+                    
+                    # Define new key (last item)
+                    new_key = f'element_{len(dictionary) + 1}'
+
+                    # Add isotope to dictionary
+                    dictionary[new_key] = {'symbol': new_symbol, 'subscript': subscript, 'n_fu': n_fu}
+
+                    # End for loop
+                    break
+
+    # Remove original entries for elements that were substituted with isotopes
+    for symbol in elements_to_check:
+        keys_to_remove = [key for key, value in dictionary.items() if value['symbol'] == symbol]
+        for key in keys_to_remove:
+            del dictionary[key]
+
+    # Initialize empty array
+    array = []
+
+    # Iterate over each item in dictionary
+    for key, value in dictionary.items():
+        # Retrieve element symbol and numbers per formula units 
+        symbol = value['symbol']
+        n_fu = value['n_fu']
+
+        # Concatenate and append to array
+        concatenate = f'{symbol}{n_fu}'
+        array.append(concatenate)
+
+    # Print array for troubleshooting
+    # print(array)
+
+    # Concatenate array to string and replace spaces with '-'
+    mantid_formula = '-'.join([str(i) for i in array])
+    mantid_formula = mantid_formula.replace(' ', '-')  # overkill
+
+    return mantid_formula
 
 # Define xs_calculator function; cross-section calculator
-def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl'], can_material = 'aluminum', Z_param = None, a = None, b = None, c = None, alpha = None, beta = None, gamma = None):
+def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annulus'], can_material = 'aluminum', isotopes = None, isotopes_pct = None, Z_param = None, a = None, b = None, c = None, alpha = None, beta = None, gamma = None):
     # Create empty data container/workspace
     ws = CreateSampleWorkspace()
 
@@ -195,21 +278,13 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl'], can_m
     # Check if x is a filepath for a CIF
     try:
         if x.endswith(file_extension) and os.path.isfile(x):
-            # Extract mantid_formula, sample_n_density, total_n, a, b, c, alpha, beta, gamma with read_cif() function
-            mantid_formula, sample_n_density, total_n, a, b, c, alpha, beta, gamma, Z_param = read_cif(x)
+            # Extract sample_n_density, total_n, elements, a, b, c, alpha, beta, gamma with read_cif() function
+            sample_n_density, total_n, elements, a, b, c, alpha, beta, gamma, Z_param = read_cif(x)
 
-            # Convert string values to floats
-            a = float(a)
-            b = float(b)
-            c = float(c)
-            alpha = float(alpha)
-            beta = float(beta)
-            gamma = float(gamma)
-    
-            # Find unit cell volume in A^3
-            unit_cell_volume = a * b * c * np.sqrt(1-np.cos(alpha * np.pi/180)**2 - np.cos(beta * np.pi/180)**2 - np.cos(gamma * np.pi/180)**2 + 2*np.cos(alpha * np.pi/180) * np.cos(beta * np.pi/180) * np.cos(gamma * np.pi/180))
-            
-            # Define sample
+            if isotopes is not None: 
+                mantid_formula = update_with_isotopes(dictionary = elements, isotopes = isotopes, isotopes_pct = isotopes_pct, Z_param = Z_param)
+
+            # Define sample in workspace
             # Add material to data container/workspace
             SetSample(ws, Material = {'ChemicalFormula': mantid_formula,
                                       'SampleNumberDensity': sample_n_density})
@@ -234,7 +309,7 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl'], can_m
             # Find unit cell volume in A^3
             unit_cell_volume = a * b * c * np.sqrt(1-np.cos(alpha * np.pi/180)**2 - np.cos(beta * np.pi/180)**2 - np.cos(gamma * np.pi/180)**2 + 2*np.cos(alpha * np.pi/180) * np.cos(beta * np.pi/180) * np.cos(gamma * np.pi/180))
     
-            # Define sample
+            # Define sample in workspace
             # Add material to data container/workspace
             SetSample(ws, Material = {'ChemicalFormula': mantid_formula,
                                       'UnitCellVolume': float(unit_cell_volume),
@@ -253,7 +328,7 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl'], can_m
     # Print formula for troubleshooting
     # print(mantid_formula)
     
-    # Check for troubleshooting
+    # Obtain sample object from workspace
     sample = ws.sample()
 
     # Retrieve absorption cross-section
@@ -276,22 +351,18 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl'], can_m
     # print(f'Relative molecular mass: {molecular_mass}')
 
     # Convert string values to floats
-    # a = float(a)
-    # b = float(b)
-    # c = float(c)
-    # alpha = float(alpha)
-    # beta = float(beta)
-    # gamma = float(gamma)
+    a = float(a)
+    b = float(b)
+    c = float(c)
+    alpha = float(alpha)
+    beta = float(beta)
+    gamma = float(gamma)
     
     # Find unit cell volume in A^3
-    # unit_cell_volume = a * b * c * np.sqrt(1-np.cos(alpha * np.pi/180)**2 - np.cos(beta * np.pi/180)**2 - np.cos(gamma * np.pi/180)**2 + 2*np.cos(alpha * np.pi/180) * np.cos(beta * np.pi/180) * np.cos(gamma * np.pi/180))
+    unit_cell_volume = a * b * c * np.sqrt(1-np.cos(alpha * np.pi/180)**2 - np.cos(beta * np.pi/180)**2 - np.cos(gamma * np.pi/180)**2 + 2*np.cos(alpha * np.pi/180) * np.cos(beta * np.pi/180) * np.cos(gamma * np.pi/180))
     
     # Find theoretical density in g/cc
     theory_density = molecular_mass/unit_cell_volume/0.6022
-    
-    # Find absorption cross section per formula unit at given incident neutron energy in bn/fu
-    # sqrt_neutron_energy = np.sqrt(25/float(neutron_energy))
-    # absorb_xs_sqrt = absorb_xs*sqrt_neutron_energy
     
     # Initialize empty dictionaries
     sample_mass = {}
@@ -336,15 +407,15 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl'], can_m
             # sample_moles[drawing_number] = sample_moles_cyl
             # sample_volume_dict[drawing_number] = sample_volume_value
 
-    # Check if `annular` is in `can` parameter in xs_calculator() function
-    # if 'annular' in can:
+    # Check if `annulus` is in `can` parameter in xs_calculator() function
+    # if 'annulus' in can:
         # Iterate over each row in DataFrame
-        # for index, row in annular.iterrows():
+        # for index, row in annulus.iterrows():
             # Find sample mass
-            # sample_mass_annular = sample_volume*pack_fraction
+            # sample_mass_annulus = sample_volume*pack_fraction
             
             # Find annulus area 
-            # sample_area_annular = (np.pi*(sample_outer_radius)**2) - (np.pi*(sample_inner_radius)**2)
+            # sample_area_annulus = (np.pi*(sample_outer_radius)**2) - (np.pi*(sample_inner_radius)**2)
     
     # Find penetration depth due to scattering in cm
     scatter_depth = unit_cell_volume/(scatter_xs * pack_fraction)
@@ -377,12 +448,6 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl'], can_m
             # Extract sample mass from dictionary
             sample_mass_i = sample_mass.get(drawing_number)
 
-            # Print values for troubleshooting
-            # print(f'sample_mass: {sample_mass_i}')
-            # print(f'pack_fraction: {pack_fraction}')
-            # print(f'theory_density: {theory_density}')
-            # print(f'sample_area: {sample_area}')
-    
             # Find percent of incident beam that is scattered (assume no absorption)
             percent_scatter_flat = 100 * (1-(np.exp(-(sample_thick_flat/scatter_depth))))
     
@@ -405,8 +470,8 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl'], can_m
         # Find percent of incident beam that is absorbed (assume no scattering)
         # percent_absorb_cyl =  100 * (1-(np.exp(-(sample_thick_cyl/absorb_depth))))
     
-    # Check if `annular` is in `can` parameter in xs_calculator() function
-    # if 'annular' in can:
+    # Check if `annulus` is in `can` parameter in xs_calculator() function
+    # if 'annulus' in can:
         # Find thickness of sample spread homogenously over sample can in cm
         # Find percent of incident beam that is scattered (assume no absorption)
         # Find percent of incident beam that is absorbed (assume no scattering)
@@ -469,10 +534,3 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl'], can_m
     ''')
 
     print(df_concat)
-    # print(df)
-
-# cif_filepath = os.path.join(this_dir, 'src', 'cif', 'Ba2Co1La2O12Te2.cif')
-# xs_calculator(x = cif_filepath, neutron_energy = 5, pack_fraction = 0.45)
-
-# str = 'Ba2-Co1-La2-O12-Te2'
-# xs_calculator(x = str, neutron_energy = 5, pack_fraction = 0.45, Z_param = 3, a = 5.69, b = 5.69, c = 27.58, alpha = 90, beta = 90, gamma = 120)
