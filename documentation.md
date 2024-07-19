@@ -1,1 +1,1 @@
-# Goldilock$\sigma$
+# Goldilockσ
