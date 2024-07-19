@@ -16,7 +16,7 @@ this_dir = os.getcwd()
 # Read attributes for sample powder cans
 flat_plate = pd.read_csv(os.path.join(this_dir, 'src', 'dict', 'flatPlate.csv'))
 cylindrical = pd.read_csv(os.path.join(this_dir, 'src', 'dict', 'cylindrical.csv'))
-annular = pd.read_csv(os.path.join(this_dir, 'src', 'dict', 'annular.csv')) # Update to annulus = pd.read_csv('annulus.csv')
+annulus = pd.read_csv(os.path.join(this_dir, 'src', 'dict', 'annulus.csv'))
 cans_desc = pd.read_csv(os.path.join(this_dir, 'src', 'dict', 'canDescription.csv'))
 
 # Define remove_parentheses() function
@@ -45,23 +45,6 @@ def sum_total_n(i):
     
     # Return total sum
     return total_sum
-
-# Define add_parentheses_to_isotopes() function
-# def add_parentheses_to_isotopes(x, isotopes):
-#    for i in isotopes:
-#        # Define regular expression for given element followed by digits, for isotopes that are not already inside parentheses
-#        regex = fr'(?<!\()({i}\d+)(?!\))'
-#        # Substitute matched pattern with itself wrapped in parentheses
-#        x = re.sub(regex, r'(\1)', x)
-#    return x
-
-# Define special_isotopes() function
-def special_isotopes(isotope):
-    if isotope == '(H2)':
-        isotope = 'D'
-    elif isotope == '(H3)':
-        isotope = 'T'
-    return isotope
 
 # Define read_cif() function
 def read_cif(filepath):
@@ -130,8 +113,9 @@ def read_cif(filepath):
 
     # Define regular expression pattern for dictionary
     # Group 1: [A-Za-z] matches any uppercase (A-Z) or lowercase (a-z) letter
-    # Group 2: (\d+), where \d matches any digit (0-9) 
-    pattern = re.compile(r'([A-Za-z]+)(\d+)')
+    # Group 2: (\d+), where \d matches any digit (0-9), possibly with a decimal
+    # pattern = re.compile(r'([A-Za-z]+)(\d+)')
+    pattern = re.compile(r'([A-Za-z]+)(\d+(\.\d+)?)')
 
     # Iterate through each element; return both index (i) and string for each element in chemical formula
     for i, string in enumerate(formula_split):
@@ -158,23 +142,23 @@ def read_cif(filepath):
         # print(f'{key}: {value}')
 
     # Initialize empty array
-    array = []
+    # array = []
 
     # Iterate over each item in dictionary
-    for key, value in elements.items():
+    # for key, value in elements.items():
         # Retrieve element symbol and numbers per formula units 
-        symbol = value['symbol']
-        n_fu = value['n_fu']
+    #    symbol = value['symbol']
+    #    n_fu = value['n_fu']
 
         # Concatenate and append to array
-        concatenate = f'{symbol}{n_fu}'
-        array.append(concatenate)
+    #    concatenate = f'{symbol}{n_fu}'
+    #    array.append(concatenate)
 
     # Print array for troubleshooting
     # print(array)
 
     # Concatenate array to string
-    mantid_formula = '-'.join([str(i) for i in array])
+    # mantid_formula = '-'.join([str(i) for i in array])
 
     # Print string for troubleshooting
     # print(mantid_formula)
@@ -191,8 +175,89 @@ def read_cif(filepath):
     # Print total n
     # print('Total n:', total_n)
     
-    # Return mantid_formula, sample_n_density, total_n, a, b, c, alpha, beta, gamma
-    return mantid_formula, sample_n_density, total_n, a, b, c, alpha, beta, gamma, Z_param
+    # Return sample_n_density, total_n, elements a, b, c, alpha, beta, gamma
+    return sample_n_density, total_n, elements, a, b, c, alpha, beta, gamma, Z_param
+
+# Define update_with_isotopes() function
+def update_with_isotopes(dictionary, isotopes, isotopes_pct, Z_param):
+    # Define regular expression pattern to match element symbol (letters only)
+    element_pattern = re.compile(r'([A-Za-z]+)')
+    
+    # Initialize empty array
+    # `elements_to_check` stores element symbol
+    # (e.g., for "Li7", add "Li" to `elements_to_check`)
+    elements_to_check = []
+
+    # Enumerate and iterate over each isotope in isotopes
+    for i, isotope in enumerate(isotopes):
+        # Match isotope against regular expression pattern
+        match = element_pattern.match(isotope)
+
+        # Check object is not `None`
+        if match:
+            # Extract element symbol
+            # (e.g., "Li" from "Li7")
+            element_symbol = match.group(1)
+            
+            # Check element symbol exists in dictionary
+            for key, value in dictionary.items():
+                if value['symbol'] == element_symbol:
+                    # Store original element symbol for later removal from dictionary
+                    elements_to_check.append(element_symbol)
+
+                    # Add parantheses around isotope
+                    new_symbol = f'({isotope})'
+
+                    # Add if/elif case for special cases
+                    if new_symbol == '(H2)':
+                        # Replace hydrogen-2 with deuterium
+                        new_symbol = 'D'
+                    elif new_symbol == '(H3)':
+                        # Replace hydrogen-3 with tritium
+                        new_symbol = 'T'
+                    
+                    # Find new subscript (percentage of element is isotope)
+                    subscript = float(value['subscript']) * isotopes_pct[i]
+
+                    # Find how many numbers per formula units
+                    n_fu = round(subscript * float(Z_param), 3)
+                    
+                    # Define new key (last item)
+                    new_key = f'element_{len(dictionary) + 1}'
+
+                    # Add isotope to dictionary
+                    dictionary[new_key] = {'symbol': new_symbol, 'subscript': subscript, 'n_fu': n_fu}
+
+                    # End for loop
+                    break
+
+    # Remove original entries for elements that were substituted with isotopes
+    for symbol in elements_to_check:
+        keys_to_remove = [key for key, value in dictionary.items() if value['symbol'] == symbol]
+        for key in keys_to_remove:
+            del dictionary[key]
+
+    # Initialize empty array
+    array = []
+
+    # Iterate over each item in dictionary
+    for key, value in dictionary.items():
+        # Retrieve element symbol and numbers per formula units 
+        symbol = value['symbol']
+        n_fu = value['n_fu']
+
+        # Concatenate and append to array
+        concatenate = f'{symbol}{n_fu}'
+        array.append(concatenate)
+
+    # Print array for troubleshooting
+    # print(array)
+
+    # Concatenate array to string and replace spaces with '-'
+    mantid_formula = '-'.join([str(i) for i in array])
+    mantid_formula = mantid_formula.replace(' ', '-')  # overkill
+
+    return mantid_formula
 
 # Define xs_calculator function; cross-section calculator
 def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annulus'], can_material = 'aluminum', isotopes = None, isotopes_pct = None, Z_param = None, a = None, b = None, c = None, alpha = None, beta = None, gamma = None):
@@ -213,20 +278,11 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
     # Check if x is a filepath for a CIF
     try:
         if x.endswith(file_extension) and os.path.isfile(x):
-            # Extract mantid_formula, sample_n_density, total_n, a, b, c, alpha, beta, gamma with read_cif() function
-            mantid_formula, sample_n_density, total_n, a, b, c, alpha, beta, gamma, Z_param = read_cif(x)
+            # Extract sample_n_density, total_n, elements, a, b, c, alpha, beta, gamma with read_cif() function
+            sample_n_density, total_n, elements, a, b, c, alpha, beta, gamma, Z_param = read_cif(x)
 
-            # Define sub_isotopes() function
-            # def sub_isotopes(formula, isotopes, isotopes_pct):
-
-            # if isotopes is not None:
-            #     mantid_formula = sub_isotopes(mantid_formula, isotopes, isotopes_pct)
-    
-            # Replace spaces with hyphens
-            # mantid_formula = mantid_formula.replace(' ', '-')
-
-            # For troubleshooting
-            print(mantid_formula)
+            if isotopes is not None: 
+                mantid_formula = update_with_isotopes(dictionary = elements, isotopes = isotopes, isotopes_pct = isotopes_pct, Z_param = Z_param)
 
             # Define sample in workspace
             # Add material to data container/workspace
