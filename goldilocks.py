@@ -8,7 +8,7 @@ import CifFile
 import mantid as mtd
 from mantid.simpleapi import CreateSampleWorkspace, SetSample
 from mantid.kernel import Material
-from scipy import integrate
+from scipy.integrate import quad
 
 # Obtain current working directory filepath
 this_dir = os.getcwd()
@@ -180,7 +180,7 @@ def read_cif(filepath):
     return mantid_formula, sample_n_density, total_n, a, b, c, alpha, beta, gamma, Z_param
 
 # Define xs_calculator function; cross-section calculator
-def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl'], can_material = 'aluminum', Z_param = None, a = None, b = None, c = None, alpha = None, beta = None, gamma = None):
+def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annulus'], can_material = ['aluminum', 'vanadium'], Z_param = None, a = None, b = None, c = None, alpha = None, beta = None, gamma = None):
     # Create empty data container/workspace
     ws = CreateSampleWorkspace()
 
@@ -295,7 +295,7 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl'], can_m
             can_volume_value = row['can_volume']/1000 # in cm^3
 
             # Find sample mass in grams
-            sample_mass_flat = can_volume_value*theory_density*pack_fraction
+            sample_mass_flat = can_volume_value * theory_density * pack_fraction # in grams
         
             # Find number of moles of formula unit in sample
             sample_moles_flat = (sample_mass_flat/molecular_mass)*1000
@@ -306,23 +306,23 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl'], can_m
             sample_moles[drawing_number] = sample_moles_flat
 
     # Check if `cyl` is in `can` parameter in xs_calculator() function
-    # if 'cyl' in can:
+    if 'cyl' in can:
     # Iterate over each row in DataFrame
-    #for index, row in cylindrical.iterrows():
+    for index, row in cylindrical.iterrows():
             # Extract `drawing_number` and `sample_volume` for each row
-            # drawing_number = row['drawing_number']
-            # sample_volume_value = row['sample_volume']
+            drawing_number = row['drawing_number']
+            can_volume_value = row['can_volume']
 
-            # Find sample mass
-            # sample_mass_cyl = sample_volume_value*pack_fraction
+            # Find sample mass in grams
+            sample_mass_cyl = can_volume_value * theory_density * pack_fraction # in grams
 
             # Find number of moles of formula unit in sample
-            # sample_moles_cyl = sample_mass_cyl/molecular_mass
+            sample_moles_cyl = (sample_mass_cyl/molecular_mass)*1000
 
             # Populate dictionaries with `drawing_number` as key
-            # sample_mass[drawing_number] = sample_mass_cyl
-            # sample_moles[drawing_number] = sample_moles_cyl
-            # sample_volume_dict[drawing_number] = sample_volume_value
+            sample_mass[drawing_number] = sample_mass_cyl
+            sample_moles[drawing_number] = sample_moles_cyl
+            can_volume_dict[drawing_number] = can_volume_value
 
     # Check if `annulus` is in `can` parameter in xs_calculator() function
     # if 'annulus' in can:
@@ -377,19 +377,41 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl'], can_m
             percent_absorb[drawing_number] = percent_absorb_flat
 
     # Check if `cyl` is in `can` parameter in xs_calculator() function
-    # if 'cyl' in can:
-        # Find thickness of sample spread homogenously over sample can in cm
-        # sample_thick_cyl = sample_mass_cyl/(pack_fraction*theory_density*can_volume) 
-    
-        # Find percent of incident beam that is scattered (assume no absorption)
-        # percent_scatter_cyl = 100 * (1-(np.exp(-(sample_thick_cyl/scatter_depth))))
-    
-        # Find percent of incident beam that is absorbed (assume no scattering)
-        # percent_absorb_cyl =  100 * (1-(np.exp(-(sample_thick_cyl/absorb_depth))))
-    
+    if 'cyl' in can:
+        # Iterate over each row in DataFrame
+        for index, row in cylindrical.iterrows():
+            # Extract `drawing_number`, `sample_area`, and `can_thick` for each row
+            drawing_number = row['drawing_number']
+            can_inner_radius = row['can_inner_radius']
+            can_thick = row['can_thick']
+
+            # Define intcyl3() function
+            def intcyl3(x, inner_radius, zeta):
+                dval = np.sqrt(inner_radius**2 - x**2)
+                expression = 1 - np.exp(-2 * dval/zeta)
+                return expression
+
+            # Define cylin_integralV3() function
+            def cylin_integralV3(depth, volume, pack_fraction, inner_radius):
+                zeta = volume / (pack_fraction * depth)
+                
+                # Compute numerical integration of intcyl3() over the interval [-inner_radius, inner_radius]
+                integral_result, _ = quad(intcyl3, -inner_radius, inner_radius, args = (inner_radius, zeta))
+                int1 = 100 * integral_result
+                return int1 / (2 * inner_radius)
+            
+            # Find percent of incident beam that is scattered (assume no absorption)
+            percent_scatter_cyl = cylin_integralV3(depth = scatter_depth, volume = unit_cell_volume, pack_fraction = pack_fraction, inner_radius= can_inner_radius)
+            
+            # Find percent of incident beam that is absorbed (assume no scattering)
+            percent_absorb_cyl = cylin_integralV3(depth = absorb_depth, volume = unit_cell_volume, pack_fraction = pack_fraction, inner_radius = can_inner_radius)
+
+            # Populate dictionaries with `drawing_number` as key
+            percent_scatter[drawing_number] = percent_scatter_cyl
+            percent_absorb[drawing_number] = percent_absorb_cyl
+
     # Check if `annulus` is in `can` parameter in xs_calculator() function
     # if 'annulus' in can:
-        # Find thickness of sample spread homogenously over sample can in cm
         # Find percent of incident beam that is scattered (assume no absorption)
         # Find percent of incident beam that is absorbed (assume no scattering)
 
