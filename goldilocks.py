@@ -112,10 +112,10 @@ def read_cif(filepath):
     elements = {}
 
     # Define regular expression pattern for dictionary
-    # Group 1: [A-Za-z] matches any uppercase (A-Z) or lowercase (a-z) letter
-    # Group 2: (\d+), where \d matches any digit (0-9), possibly with a decimal
-    # pattern = re.compile(r'([A-Za-z]+)(\d+)')
-    pattern = re.compile(r'([A-Za-z]+)(\d+(\.\d+)?)')
+    # Group 1: [A-Za-z]+ matches any uppercase (A-Z) or lowercase (a-z) letter or sequence of letters (i.e., element)
+    # Group 2: (\([\w\d]+\)) matches any sequence denoted within parentheses (i.e., isotope like (Li7))
+    # Group 3: (\d+(\.\d+)?) matches any digit (0-9), possibly with a decimal
+    pattern = re.compile(r'([A-Za-z]+|\([\w\d]+\))(\d+(\.\d+)?)')
 
     # Iterate through each element; return both index (i) and string for each element in chemical formula
     for i, string in enumerate(formula_split):
@@ -124,7 +124,7 @@ def read_cif(filepath):
     
         # Check object is not `None`
         if match:
-            # Extract element symbol/Group 1 match
+            # Extract element/Group 1 match
             element_symbol = match.group(1)
 
             # Extract subscript/Group 2 match, if `None` (no subscript) then `1`
@@ -159,10 +159,7 @@ def read_cif(filepath):
 
     # Concatenate array to string and replace spaces with '-'
     mantid_formula = '-'.join([str(i) for i in array])
-    mantid_formula = mantid_formula.replace(' ', '-')
-
-    # Print string for troubleshooting
-    # print(mantid_formula)
+    # mantid_formula = mantid_formula.replace(' ', '-')
 
     # Initialize variable
     total_n = 0
@@ -280,6 +277,12 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
     
     # Find theoretical density in g/cc
     theory_density = molecular_mass/unit_cell_volume/0.6022
+
+    # if 'alumnium' in can_material:
+    #    element = 'Al'
+
+    #if 'vanadium' in can_material:  
+    #    element = 'V'
     
     # Initialize empty dictionaries
     sample_mass = {}
@@ -292,29 +295,29 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
         for index, row in flat_plate.iterrows():
             # Extract `drawing_number` and `can_volume` for each row
             drawing_number = row['drawing_number']
-            can_volume_value = row['can_volume']/1000 # in cm^3
+            can_volume_flat = row['can_volume']/1000 # in cm^3
 
             # Find sample mass in grams
-            sample_mass_flat = can_volume_value * theory_density * pack_fraction # in grams
+            sample_mass_flat = can_volume_flat * theory_density * pack_fraction # in grams
         
             # Find number of moles of formula unit in sample
             sample_moles_flat = (sample_mass_flat/molecular_mass)*1000
             
             # Populate dictionaries with `drawing_number` as key
             sample_mass[drawing_number] = sample_mass_flat
-            can_volume_dict[drawing_number] = can_volume_value
+            can_volume_dict[drawing_number] = can_volume_flat
             sample_moles[drawing_number] = sample_moles_flat
 
     # Check if `cyl` is in `can` parameter in xs_calculator() function
     if 'cyl' in can:
     # Iterate over each row in DataFrame
-    for index, row in cylindrical.iterrows():
+        for index, row in cylindrical.iterrows():
             # Extract `drawing_number` and `sample_volume` for each row
             drawing_number = row['drawing_number']
-            can_volume_value = row['can_volume']
+            can_volume_cyl = row['can_volume']
 
             # Find sample mass in grams
-            sample_mass_cyl = can_volume_value * theory_density * pack_fraction # in grams
+            sample_mass_cyl = can_volume_cyl * theory_density * pack_fraction # in grams
 
             # Find number of moles of formula unit in sample
             sample_moles_cyl = (sample_mass_cyl/molecular_mass)*1000
@@ -322,17 +325,26 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
             # Populate dictionaries with `drawing_number` as key
             sample_mass[drawing_number] = sample_mass_cyl
             sample_moles[drawing_number] = sample_moles_cyl
-            can_volume_dict[drawing_number] = can_volume_value
+            can_volume_dict[drawing_number] = can_volume_cyl
 
     # Check if `annulus` is in `can` parameter in xs_calculator() function
-    # if 'annulus' in can:
+    if 'annulus' in can:
         # Iterate over each row in DataFrame
-        # for index, row in annulus.iterrows():
-            # Find sample mass
-            # sample_mass_annulus = sample_volume*pack_fraction
-            
-            # Find annulus area 
-            # sample_area_annulus = (np.pi*(sample_outer_radius)**2) - (np.pi*(sample_inner_radius)**2)
+        for index, row in annulus.iterrows():
+            # Extract `drawing_number` and `sample_volume` for each row
+            drawing_number = row['drawing_number']
+            can_volume_ann = row['sample_volume'] # Note: update name in dict
+
+            # Find sample mass in grams
+            sample_mass_ann = can_volume_ann * theory_density * pack_fraction # in grams
+
+            # Find number of moles of formula unit in sample
+            sample_moles_ann = (sample_mass_cyl/molecular_mass)*1000
+
+            # Populate dictionaries with `drawing_number` as key
+            sample_mass[drawing_number] = sample_mass_ann
+            sample_moles[drawing_number] = sample_moles_ann
+            can_volume_dict[drawing_number] = can_volume_ann
     
     # Find penetration depth due to scattering in cm
     scatter_depth = unit_cell_volume/(scatter_xs * pack_fraction)
@@ -385,26 +397,30 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
             can_inner_radius = row['can_inner_radius']
             can_thick = row['can_thick']
 
-            # Define intcyl3() function
-            def intcyl3(x, inner_radius, zeta):
-                dval = np.sqrt(inner_radius**2 - x**2)
-                expression = 1 - np.exp(-2 * dval/zeta)
-                return expression
+            # Define integrand_cyl() function
+            def integrand_cyl(x, paramwave):
+                R1 = paramwave[0]
+                zeta = paramwave[1]
 
-            # Define cylin_integralV3() function
-            def cylin_integralV3(depth, volume, pack_fraction, inner_radius):
-                zeta = volume / (pack_fraction * depth)
-                
-                # Compute numerical integration of intcyl3() over the interval [-inner_radius, inner_radius]
-                integral_result, _ = quad(intcyl3, -inner_radius, inner_radius, args = (inner_radius, zeta))
-                int1 = 100 * integral_result
-                return int1 / (2 * inner_radius)
+                dval = np.sqrt(R1**2 - x**2)
+                integrand = 1 - np.exp(-2 * dval / zeta)
+
+                # Return integrand for cylindrical integration
+                return integrand
+
+            # Define integral_cyl() function
+            def integral_cyl(xs, unit_cell_volume, pack_fraction, R1):
+                zeta = unit_cell_volume/pack_fraction/xs # Note: packing efficiency? units?
+                paramwave = [R1, zeta]
+                int1, _ = quad(integrand_cyl, -R1, R1, args = (paramwave))
+                result = 100 * int1/(2 * R1)
+                return result
             
             # Find percent of incident beam that is scattered (assume no absorption)
-            percent_scatter_cyl = cylin_integralV3(depth = scatter_depth, volume = unit_cell_volume, pack_fraction = pack_fraction, inner_radius= can_inner_radius)
+            percent_scatter_cyl = integral_cyl(xs = scatter_depth, unit_cell_volume = unit_cell_volume, pack_fraction = pack_fraction, R1 = can_inner_radius)
             
             # Find percent of incident beam that is absorbed (assume no scattering)
-            percent_absorb_cyl = cylin_integralV3(depth = absorb_depth, volume = unit_cell_volume, pack_fraction = pack_fraction, inner_radius = can_inner_radius)
+            percent_absorb_cyl = integral_cyl(xs = absorb_depth, unit_cell_volume = unit_cell_volume, pack_fraction = pack_fraction, R1 = can_inner_radius)
 
             # Populate dictionaries with `drawing_number` as key
             percent_scatter[drawing_number] = percent_scatter_cyl
@@ -412,6 +428,32 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
 
     # Check if `annulus` is in `can` parameter in xs_calculator() function
     # if 'annulus' in can:
+        # Define integrand_ann() function
+        # def integrand_ann(inx, pwave):
+        #     R1 = pwave[0]
+        #     zeta = pwave[1]
+        #     R2 = pwave[2]
+            
+        #     if abs(inx) < R1:
+        #         return 0
+        #     elif abs(inx) > R2:
+        #         return 0
+            
+        #     dval = np.sqrt(R2**2 - inx**2)
+
+        #     integrand = 1 - np.exp(-2 * dval / zeta)
+            
+        #     return integrand
+
+        # # Define integral_ann() function
+        # def integral_ann(xs, unit_cell_volume, pack_fraction, R1, R2):
+        #     zeta = unit_cell_volume/pack_fraction/xs
+        #     paramwave = [R1, zeta, R2]
+            
+        #     int1, _ = quad(integrand_ann, -R2, R2, args = (paramwave))
+        #     result = 100 * int1 / (2 * R2)
+            
+        #     return result
         # Find percent of incident beam that is scattered (assume no absorption)
         # Find percent of incident beam that is absorbed (assume no scattering)
 
