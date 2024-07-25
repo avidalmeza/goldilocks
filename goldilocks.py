@@ -9,6 +9,7 @@ import mantid as mtd
 from mantid.simpleapi import CreateSampleWorkspace, SetSample
 from mantid.kernel import Material
 from scipy.integrate import quad
+from scipy.integrate import trapezoid
 
 # Obtain current working directory filepath
 this_dir = os.getcwd()
@@ -46,6 +47,12 @@ def sum_total_n(i):
     # Return total sum
     return total_sum
 
+# Define unit_cell_volume() function
+def unit_cell_volume(a, b, c, alpha, gamma, beta):
+    # Find unit cell volume in A^3
+    unit_cell_volume = a * b * c * np.sqrt(1-np.cos(alpha * np.pi/180)**2 - np.cos(beta * np.pi/180)**2 - np.cos(gamma * np.pi/180)**2 + 2*np.cos(alpha * np.pi/180) * np.cos(beta * np.pi/180) * np.cos(gamma * np.pi/180))
+    return unit_cell_volume
+
 # Define integrand_cyl() function
 def integrand_cyl(x, paramwave):
     # Extract inner can radius (`R1`) and zeta
@@ -71,15 +78,17 @@ def integrand_ann(x, paramwave):
     zeta = paramwave[1]
     R2 = paramwave[2]
 
-    # If absolute value of `x` is less than inner can radius, then 0
-    if abs(x) < R1:
-        return 0
-    # If absolute value of `x` is greater than outer can radius, then 0
-    elif abs(x) > R2:
-        return 0
+    # Define `dval2`
+    dval2 = np.sqrt(R2**2 - x**2)
+
+    # If absolute value of `x` is less than inner can radius
+    if np.abs(x) < R1:
+        dval1 = np.sqrt(R1**2 - x**2)
+    # If absolute value of `x` is greater than outer can radius
+    else:
+        dval1 = 0
     
-    dval = np.sqrt(R2**2 - x**2)
-    integrand = 1 - np.exp(-2 * dval/zeta)
+    integrand = 1 - np.exp(-2 * (dval2-dval1)/zeta)
     return integrand
 
 # Define integral_ann() function
@@ -87,8 +96,18 @@ def integral_ann(xs, unit_cell_volume, pack_fraction, R1, R2):
     zeta = unit_cell_volume/pack_fraction/xs
     paramwave = [R1, zeta, R2]
     
-    int1, _ = quad(integrand_ann, -R2, R2, args = (paramwave))
-    result = 100 * int1/(2*R2)
+    # Set number of points
+    n_points = 1000
+    # Set integration limits
+    x_values = np.linspace(-R2, R2, n_points)
+
+    # Evaluate integrand at each point
+    integrand_values = np.array([integrand_ann(x, paramwave) for x in x_values])
+    
+    # Perform trapezoidal integration
+    integration = 100*trapezoid(integrand_values, x_values)
+    result = integration/(2*R2)
+
     return result            
 
 # Define read_cif() function
@@ -266,7 +285,7 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
             gamma = float(gamma)
     
             # Find unit cell volume in A^3
-            unit_cell_volume = a * b * c * np.sqrt(1-np.cos(alpha * np.pi/180)**2 - np.cos(beta * np.pi/180)**2 - np.cos(gamma * np.pi/180)**2 + 2*np.cos(alpha * np.pi/180) * np.cos(beta * np.pi/180) * np.cos(gamma * np.pi/180))
+            unit_cell_volume = unit_cell_volume(a = a, b = b, c = c, alpha = alpha, beta = beta, gamma = gamma)
     
             # Define sample
             # Add material to data container/workspace
@@ -323,12 +342,85 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
     # Find theoretical density in g/cc
     theory_density = molecular_mass/unit_cell_volume/0.6022
 
-    # if 'alumnium' in can_material:
-    #    element = 'Al'
+    # Check if workspace needs to be removed
+    # DeleteWorkspace(ws)
 
-    #if 'vanadium' in can_material:  
-    #    element = 'V'
+    # if 'alumnium' in can_material:
+    #     Al_a = 404.95 # in pm
+    #     Al_b = 404.95 # in pm
+    #     Al_c = 404.95 # in pm
+    #     Al_alpha = 90 
+    #     Al_beta = 90
+    #     Al_gamma = 90
+
+    #     Find unit cell volume in A^3
+    #     unit_cell_volume_Al = unit_cell_volume(a = Al_a, b = Al_b, c = Al_c, alpha = Al_alpha, beta = Al_beta, gamma = Al_gamma)
     
+    #     Add material to data container/workspace
+    #     SetSample(ws, Material = {'ChemicalFormula': 'Al',
+    #                               'UnitCellVolume': float(unit_cell_volume_Al),
+    #                               'ZParameter': 1})
+        
+    #     Obtain sample object from workspace
+    #     Al_sample = ws.sample()
+
+    #     Retrieve absorption cross-section
+    #     Define absorption cross section per formula unit in bn/fu
+    #     Al_absorb_xs = (float(Al_sample.getMaterial().absorbXSection()*total_n))*np.sqrt(25/neutron_energy)
+    #     print(f'Absorption cross-section: {absorb_xs}')
+
+    #     Retrieve total scattering cross-section
+    #     Define scattering cross section per formula unit in bn/fu
+    #     Al_scatter_xs = float(Al_sample.getMaterial().totalScatterXSection()*total_n)
+    #     print(f'Total scattering cross-section: {scatter_xs}')
+
+    #     Retrieve coherent scattering length
+    #     Al_scatter_length = float(Al_sample.getMaterial().cohScatterLength())
+    #     print(f'Coherent scattering length: {scatter_length}')
+
+    #     Retrieve relative molecular mass
+    #     Define molecular mass in g/mol/fu
+    #     Al_molecular_mass = float(Al_sample.getMaterial().relativeMolecularMass())
+    #     print(f'Relative molecular mass: {molecular_mass}')
+
+    # if 'vanadium' in can_material:
+    #     V_a = 303 # in pm
+    #     V_b = 303 # in pm
+    #     V_c = 303 # in pm
+    #     V_alpha = 90
+    #     V_beta = 90
+    #     V_gamma = 90
+
+    #     Find unit cell volume in A^3
+    #     unit_cell_volume_V = unit_cell_volume(a = V_a, b = V_b, c = V_c, alpha = V_alpha, beta = V_beta, gamma = V_gamma)
+    
+    #     Add material to data container/workspace
+    #     SetSample(ws, Material = {'ChemicalFormula': 'V',
+    #                               'UnitCellVolume': unit_cell_volume_V,
+    #                               'ZParameter': 1})
+        
+    #     Obtain sample object from workspace
+    #     V_sample = ws.sample()
+
+    #     Retrieve absorption cross-section
+    #     Define absorption cross section per formula unit in bn/fu
+    #     V_absorb_xs = (float(V_sample.getMaterial().absorbXSection()*total_n))*np.sqrt(25/neutron_energy)
+    #     print(f'Absorption cross-section: {absorb_xs}')
+
+    #     Retrieve total scattering cross-section
+    #     Define scattering cross section per formula unit in bn/fu
+    #     V_scatter_xs = float(V_sample.getMaterial().totalScatterXSection()*total_n)
+    #     print(f'Total scattering cross-section: {scatter_xs}')
+
+    #     Retrieve coherent scattering length
+    #     V_scatter_length = float(V_sample.getMaterial().cohScatterLength())
+    #     print(f'Coherent scattering length: {scatter_length}')
+
+    #     Retrieve relative molecular mass
+    #     Define molecular mass in g/mol/fu
+    #     V_molecular_mass = float(V_sample.getMaterial().relativeMolecularMass())
+    #     print(f'Relative molecular mass: {molecular_mass}')
+
     # Initialize empty dictionaries
     sample_mass = {}
     can_volume_dict = {}
