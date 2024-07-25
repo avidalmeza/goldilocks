@@ -46,6 +46,51 @@ def sum_total_n(i):
     # Return total sum
     return total_sum
 
+# Define integrand_cyl() function
+def integrand_cyl(x, paramwave):
+    # Extract inner can radius (`R1`) and zeta
+    R1 = paramwave[0]
+    zeta = paramwave[1]
+
+    dval = np.sqrt(R1**2 - x**2)
+    integrand = 1 - np.exp(-2 * dval/zeta)
+    return integrand
+
+# Define integral_cyl() function
+def integral_cyl(xs, unit_cell_volume, pack_fraction, R1):
+    zeta = unit_cell_volume/pack_fraction/xs # Note: packing efficiency? units?
+    paramwave = [R1, zeta]
+    int1, _ = quad(integrand_cyl, -R1, R1, args = (paramwave))
+    result = 100 * int1/(2 * R1)
+    return result
+
+# Define integrand_ann() function
+def integrand_ann(x, paramwave):
+    # Extract inner can radius (`R1`), zeta, and outer can radius (`R2`)
+    R1 = paramwave[0]
+    zeta = paramwave[1]
+    R2 = paramwave[2]
+
+    # If absolute value of `x` is less than inner can radius, then 0
+    if abs(x) < R1:
+        return 0
+    # If absolute value of `x` is greater than outer can radius, then 0
+    elif abs(x) > R2:
+        return 0
+    
+    dval = np.sqrt(R2**2 - x**2)
+    integrand = 1 - np.exp(-2 * dval/zeta)
+    return integrand
+
+# Define integral_ann() function
+def integral_ann(xs, unit_cell_volume, pack_fraction, R1, R2):
+    zeta = unit_cell_volume/pack_fraction/xs
+    paramwave = [R1, zeta, R2]
+    
+    int1, _ = quad(integrand_ann, -R2, R2, args = (paramwave))
+    result = 100 * int1/(2*R2)
+    return result            
+
 # Define read_cif() function
 def read_cif(filepath):
     # Read Crystallographic Information File
@@ -302,7 +347,7 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
         
             # Find number of moles of formula unit in sample
             sample_moles_flat = (sample_mass_flat/molecular_mass)*1000
-            
+
             # Populate dictionaries with `drawing_number` as key
             sample_mass[drawing_number] = sample_mass_flat
             can_volume_dict[drawing_number] = can_volume_flat
@@ -333,7 +378,7 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
         for index, row in annulus.iterrows():
             # Extract `drawing_number` and `sample_volume` for each row
             drawing_number = row['drawing_number']
-            can_volume_ann = row['sample_volume'] # Note: update name in dict
+            can_volume_ann = row['sample_volume'] # Note: update in dict
 
             # Find sample mass in grams
             sample_mass_ann = can_volume_ann * theory_density * pack_fraction # in grams
@@ -362,6 +407,7 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
     sample_thick = {}
     percent_scatter = {}
     percent_absorb = {}
+    # can_info = {}
 
     # Check if `flat` is in `can` parameter in xs_calculator() function
     if 'flat' in can:
@@ -370,6 +416,8 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
             # Extract `drawing_number` and `sample_area` for each row
             drawing_number = row['drawing_number']
             sample_area = row['sample_area']
+            # can_thick = row['sample_thick'] # Note: update in dict?
+            # can_area = row['sample_area'] # Note: update in dict?
 
             # Find thickness of sample spread homogenously over sample can in mm
             sample_thick_flat = row['sample_thick']/10
@@ -388,6 +436,9 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
             percent_scatter[drawing_number] = percent_scatter_flat
             percent_absorb[drawing_number] = percent_absorb_flat
 
+            # info_flat = f'Thickness: {can_thick}, Area: {can_area}'
+            # can_info[drawing_number] = info_flat
+
     # Check if `cyl` is in `can` parameter in xs_calculator() function
     if 'cyl' in can:
         # Iterate over each row in DataFrame
@@ -396,26 +447,8 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
             drawing_number = row['drawing_number']
             can_inner_radius = row['can_inner_radius']
             can_thick = row['can_thick']
+            # can_height = row['sample_height'] # Note: update in dict?
 
-            # Define integrand_cyl() function
-            def integrand_cyl(x, paramwave):
-                R1 = paramwave[0]
-                zeta = paramwave[1]
-
-                dval = np.sqrt(R1**2 - x**2)
-                integrand = 1 - np.exp(-2 * dval / zeta)
-
-                # Return integrand for cylindrical integration
-                return integrand
-
-            # Define integral_cyl() function
-            def integral_cyl(xs, unit_cell_volume, pack_fraction, R1):
-                zeta = unit_cell_volume/pack_fraction/xs # Note: packing efficiency? units?
-                paramwave = [R1, zeta]
-                int1, _ = quad(integrand_cyl, -R1, R1, args = (paramwave))
-                result = 100 * int1/(2 * R1)
-                return result
-            
             # Find percent of incident beam that is scattered (assume no absorption)
             percent_scatter_cyl = integral_cyl(xs = scatter_depth, unit_cell_volume = unit_cell_volume, pack_fraction = pack_fraction, R1 = can_inner_radius)
             
@@ -426,36 +459,31 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
             percent_scatter[drawing_number] = percent_scatter_cyl
             percent_absorb[drawing_number] = percent_absorb_cyl
 
+            # info_cyl = f'Radius: {can_inner_radius}, Height: {can_height}'
+            # can_info[drawing_number] = info_cyl
+
     # Check if `annulus` is in `can` parameter in xs_calculator() function
-    # if 'annulus' in can:
-        # Define integrand_ann() function
-        # def integrand_ann(inx, pwave):
-        #     R1 = pwave[0]
-        #     zeta = pwave[1]
-        #     R2 = pwave[2]
-            
-        #     if abs(inx) < R1:
-        #         return 0
-        #     elif abs(inx) > R2:
-        #         return 0
-            
-        #     dval = np.sqrt(R2**2 - inx**2)
+    if 'annulus' in can:
+        # Iterate over each row in DataFrame
+        for index, row in annulus.iterrows():
+            # Extract `drawing_number`, `sample_area`, and `can_thick` for each row
+            drawing_number = row['drawing_number']
+            can_inner_radius_ann = row['can_inner_radius']
+            can_outer_radius_ann = row['can_outer_radius']
+            # can_height = row['can_height'] # Note: update in dict?
 
-        #     integrand = 1 - np.exp(-2 * dval / zeta)
-            
-        #     return integrand
+            # Find percent of incident beam that is scattered (assume no absorption)
+            percent_scatter_ann = integral_ann(xs = scatter_depth, unit_cell_volume = unit_cell_volume, pack_fraction = pack_fraction, R1 = can_inner_radius_ann, R2 = can_outer_radius_ann)
 
-        # # Define integral_ann() function
-        # def integral_ann(xs, unit_cell_volume, pack_fraction, R1, R2):
-        #     zeta = unit_cell_volume/pack_fraction/xs
-        #     paramwave = [R1, zeta, R2]
-            
-        #     int1, _ = quad(integrand_ann, -R2, R2, args = (paramwave))
-        #     result = 100 * int1 / (2 * R2)
-            
-        #     return result
-        # Find percent of incident beam that is scattered (assume no absorption)
-        # Find percent of incident beam that is absorbed (assume no scattering)
+            # Find percent of incident beam that is absorbed (assume no scattering)
+            percent_absorb_ann = integral_ann(xs = absorb_depth, unit_cell_volume = unit_cell_volume, pack_fraction = pack_fraction, R1 = can_inner_radius_ann, R2 = can_outer_radius_ann)
+
+            # Populate dictionaries with `drawing_number` as key
+            percent_scatter[drawing_number] = percent_scatter_ann
+            percent_absorb[drawing_number] = percent_absorb_ann
+
+            # info_ann = f'Inner radius: {can_inner_radius}, Outer radius: {can_outer_radius}, Height: {can_height}'
+            # can_info[drawing_number] = info_ann
 
     # Convert dictionaries to DataFrames
     # Create dictionary `df_dict` of DataFrames
