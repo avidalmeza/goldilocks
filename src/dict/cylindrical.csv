@@ -1,4 +1,4 @@
-drawing_number,sample_radius,sample_height,can_volume,can_inner_radius,can_outer_radius,can_thick
+drawing_number,sample_radius_mm,sample_height_mm,can_volume_mm3,can_inner_radius_mm,can_outer_radius_mm,can_thick_mm
 107030510-I8U-8700-A235,3.175,63.246,2002.951326,3.175,3.556,0.381
 107030510-I8U-8700-A234,4.7625,63.246,4506.640484,4.7625,5.1435,0.381
 107030510-I8U-8700-A233,6.35,63.246,8011.805306,6.35,6.731,0.381
