@@ -241,7 +241,7 @@ def read_cif(filepath):
     return mantid_formula, sample_n_density, total_n, a, b, c, alpha, beta, gamma, Z_param
 
 # Define xs_calculator function; cross-section calculator
-def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annulus'], can_material = ['aluminum', 'vanadium'], Z_param = None, a = None, b = None, c = None, alpha = None, beta = None, gamma = None):
+def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annulus'], Z_param = None, a = None, b = None, c = None, alpha = None, beta = None, gamma = None):
     # Create empty data container/workspace
     ws = CreateSampleWorkspace()
 
@@ -268,13 +268,18 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
                                       'SampleNumberDensity': sample_n_density})
 
     # If error, check if x is a string and validate with validate_formula() function
-    except ValueError:
-        if validate_formula(mantid_format, x):
+    except (ValueError, AttributeError) as e:
+        # If isinstance() and validate_formula() returns True 
+        if isinstance(x, str) and validate_formula(mantid_format, x):
             # Define mantid_formula if `True`
-            mantid_formula = x
+            mantid_formula = str(x)
 
             # Define total_n if `True` with sum_total_n() function
             total_n = sum_total_n(mantid_formula)
+
+            # Ensure parameters are provided, raise an error if any are None
+            if any(param is None for param in [a, b, c, alpha, beta, gamma, Z_param]):
+                raise ValueError('All parameters a, b, c, alpha, beta, gamma, and Z_param must be provided if x is a string.')
 
             # Convert string values to floats
             a = float(a)
@@ -285,11 +290,11 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
             gamma = float(gamma)
     
             # Find unit cell volume in A^3
-            unit_cell_volume = unit_cell_volume(a = a, b = b, c = c, alpha = alpha, beta = beta, gamma = gamma)
+            unit_cell_volume = unit_cell_volume(a, b, c, alpha, beta, gamma)
     
             # Define sample
             # Add material to data container/workspace
-            SetSample(ws, Material = {'ChemicalFormula': mantid_formula,
+            SetSample(ws, Material = {'ChemicalFormula': str(mantid_formula),
                                       'UnitCellVolume': float(unit_cell_volume),
                                       'ZParameter': float(Z_param)})
         else:
@@ -337,89 +342,10 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
     gamma = float(gamma)
     
     # Find unit cell volume in A^3
-    unit_cell_volume = a * b * c * np.sqrt(1-np.cos(alpha * np.pi/180)**2 - np.cos(beta * np.pi/180)**2 - np.cos(gamma * np.pi/180)**2 + 2*np.cos(alpha * np.pi/180) * np.cos(beta * np.pi/180) * np.cos(gamma * np.pi/180))
+    unit_cell_volume = unit_cell_volume(a, b, c, alpha, beta, gamma)
     
     # Find theoretical density in g/cc
     theory_density = molecular_mass/unit_cell_volume/0.6022
-
-    # Check if workspace needs to be removed
-    # DeleteWorkspace(ws)
-
-    # if 'alumnium' in can_material:
-    #     Al_a = 404.95 # in pm
-    #     Al_b = 404.95 # in pm
-    #     Al_c = 404.95 # in pm
-    #     Al_alpha = 90 
-    #     Al_beta = 90
-    #     Al_gamma = 90
-
-    #     Find unit cell volume in A^3
-    #     unit_cell_volume_Al = unit_cell_volume(a = Al_a, b = Al_b, c = Al_c, alpha = Al_alpha, beta = Al_beta, gamma = Al_gamma)
-    
-    #     Add material to data container/workspace
-    #     SetSample(ws, Material = {'ChemicalFormula': 'Al',
-    #                               'UnitCellVolume': float(unit_cell_volume_Al),
-    #                               'ZParameter': 1})
-        
-    #     Obtain sample object from workspace
-    #     Al_sample = ws.sample()
-
-    #     Retrieve absorption cross-section
-    #     Define absorption cross section per formula unit in bn/fu
-    #     Al_absorb_xs = (float(Al_sample.getMaterial().absorbXSection()*total_n))*np.sqrt(25/neutron_energy)
-    #     print(f'Absorption cross-section: {absorb_xs}')
-
-    #     Retrieve total scattering cross-section
-    #     Define scattering cross section per formula unit in bn/fu
-    #     Al_scatter_xs = float(Al_sample.getMaterial().totalScatterXSection()*total_n)
-    #     print(f'Total scattering cross-section: {scatter_xs}')
-
-    #     Retrieve coherent scattering length
-    #     Al_scatter_length = float(Al_sample.getMaterial().cohScatterLength())
-    #     print(f'Coherent scattering length: {scatter_length}')
-
-    #     Retrieve relative molecular mass
-    #     Define molecular mass in g/mol/fu
-    #     Al_molecular_mass = float(Al_sample.getMaterial().relativeMolecularMass())
-    #     print(f'Relative molecular mass: {molecular_mass}')
-
-    # if 'vanadium' in can_material:
-    #     V_a = 303 # in pm
-    #     V_b = 303 # in pm
-    #     V_c = 303 # in pm
-    #     V_alpha = 90
-    #     V_beta = 90
-    #     V_gamma = 90
-
-    #     Find unit cell volume in A^3
-    #     unit_cell_volume_V = unit_cell_volume(a = V_a, b = V_b, c = V_c, alpha = V_alpha, beta = V_beta, gamma = V_gamma)
-    
-    #     Add material to data container/workspace
-    #     SetSample(ws, Material = {'ChemicalFormula': 'V',
-    #                               'UnitCellVolume': unit_cell_volume_V,
-    #                               'ZParameter': 1})
-        
-    #     Obtain sample object from workspace
-    #     V_sample = ws.sample()
-
-    #     Retrieve absorption cross-section
-    #     Define absorption cross section per formula unit in bn/fu
-    #     V_absorb_xs = (float(V_sample.getMaterial().absorbXSection()*total_n))*np.sqrt(25/neutron_energy)
-    #     print(f'Absorption cross-section: {absorb_xs}')
-
-    #     Retrieve total scattering cross-section
-    #     Define scattering cross section per formula unit in bn/fu
-    #     V_scatter_xs = float(V_sample.getMaterial().totalScatterXSection()*total_n)
-    #     print(f'Total scattering cross-section: {scatter_xs}')
-
-    #     Retrieve coherent scattering length
-    #     V_scatter_length = float(V_sample.getMaterial().cohScatterLength())
-    #     print(f'Coherent scattering length: {scatter_length}')
-
-    #     Retrieve relative molecular mass
-    #     Define molecular mass in g/mol/fu
-    #     V_molecular_mass = float(V_sample.getMaterial().relativeMolecularMass())
-    #     print(f'Relative molecular mass: {molecular_mass}')
 
     # Initialize empty dictionaries
     sample_mass = {}
@@ -430,9 +356,9 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
     if 'flat' in can:
         # Iterate over each row in DataFrame
         for index, row in flat_plate.iterrows():
-            # Extract `drawing_number` and `can_volume` for each row
+            # Extract `drawing_number` and `can_volume_mm3` for each row
             drawing_number = row['drawing_number']
-            can_volume_flat = row['can_volume']/1000 # in cm^3
+            can_volume_flat = row['can_volume_mm3']/1000 # in cm^3
 
             # Find sample mass in grams
             sample_mass_flat = can_volume_flat * theory_density * pack_fraction # in grams
@@ -449,9 +375,9 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
     if 'cyl' in can:
     # Iterate over each row in DataFrame
         for index, row in cylindrical.iterrows():
-            # Extract `drawing_number` and `sample_volume` for each row
+            # Extract `drawing_number` and `can_volume_mm3` for each row
             drawing_number = row['drawing_number']
-            can_volume_cyl = row['can_volume']
+            can_volume_cyl = row['can_volume_mm3']/1000 # in cm^3
 
             # Find sample mass in grams
             sample_mass_cyl = can_volume_cyl * theory_density * pack_fraction # in grams
@@ -468,9 +394,9 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
     if 'annulus' in can:
         # Iterate over each row in DataFrame
         for index, row in annulus.iterrows():
-            # Extract `drawing_number` and `sample_volume` for each row
+            # Extract `drawing_number` and `can_volume_mm3` for each row
             drawing_number = row['drawing_number']
-            can_volume_ann = row['sample_volume'] # Note: update in dict
+            can_volume_ann = row['can_volume_mm3']/1000 # in cm^3
 
             # Find sample mass in grams
             sample_mass_ann = can_volume_ann * theory_density * pack_fraction # in grams
@@ -505,14 +431,14 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
     if 'flat' in can:
         # Iterate over each row in DataFrame
         for index, row in flat_plate.iterrows():
-            # Extract `drawing_number` and `sample_area` for each row
+            # Extract `drawing_number` and `can_area_mm2` for each row
             drawing_number = row['drawing_number']
-            sample_area = row['sample_area']
+            sample_area = row['can_area_mm2']
             # can_thick = row['sample_thick'] # Note: update in dict?
             # can_area = row['sample_area'] # Note: update in dict?
 
             # Find thickness of sample spread homogenously over sample can in mm
-            sample_thick_flat = row['sample_thick']/10
+            sample_thick_flat = row['sample_thick_mm']/10
 
             # Extract sample mass from dictionary
             sample_mass_i = sample_mass.get(drawing_number)
@@ -535,17 +461,17 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
     if 'cyl' in can:
         # Iterate over each row in DataFrame
         for index, row in cylindrical.iterrows():
-            # Extract `drawing_number`, `sample_area`, and `can_thick` for each row
+            # Extract `drawing_number`, `can_inner_radius_mm`, and `can_thick_mm` for each row
             drawing_number = row['drawing_number']
-            can_inner_radius = row['can_inner_radius']
-            can_thick = row['can_thick']
+            can_inner_radius = row['can_inner_radius_mm']
+            can_thick = row['can_thick_mm']
             # can_height = row['sample_height'] # Note: update in dict?
 
             # Find percent of incident beam that is scattered (assume no absorption)
-            percent_scatter_cyl = integral_cyl(xs = scatter_depth, unit_cell_volume = unit_cell_volume, pack_fraction = pack_fraction, R1 = can_inner_radius)
+            percent_scatter_cyl = integral_cyl(scatter_depth, unit_cell_volume, pack_fraction, R1 = can_inner_radius)
             
             # Find percent of incident beam that is absorbed (assume no scattering)
-            percent_absorb_cyl = integral_cyl(xs = absorb_depth, unit_cell_volume = unit_cell_volume, pack_fraction = pack_fraction, R1 = can_inner_radius)
+            percent_absorb_cyl = integral_cyl(absorb_depth, unit_cell_volume, pack_fraction, R1 = can_inner_radius)
 
             # Populate dictionaries with `drawing_number` as key
             percent_scatter[drawing_number] = percent_scatter_cyl
@@ -558,17 +484,17 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
     if 'annulus' in can:
         # Iterate over each row in DataFrame
         for index, row in annulus.iterrows():
-            # Extract `drawing_number`, `sample_area`, and `can_thick` for each row
+            # Extract `drawing_number`, `can_inner_radius_mm`, and `can_outer_radius_mm` for each row
             drawing_number = row['drawing_number']
-            can_inner_radius_ann = row['can_inner_radius']
-            can_outer_radius_ann = row['can_outer_radius']
+            can_inner_radius_ann = row['can_inner_radius_mm']
+            can_outer_radius_ann = row['can_outer_radius_mm']
             # can_height = row['can_height'] # Note: update in dict?
 
             # Find percent of incident beam that is scattered (assume no absorption)
-            percent_scatter_ann = integral_ann(xs = scatter_depth, unit_cell_volume = unit_cell_volume, pack_fraction = pack_fraction, R1 = can_inner_radius_ann, R2 = can_outer_radius_ann)
+            percent_scatter_ann = integral_ann(scatter_depth, unit_cell_volume, pack_fraction, R1 = can_inner_radius_ann, R2 = can_outer_radius_ann)
 
             # Find percent of incident beam that is absorbed (assume no scattering)
-            percent_absorb_ann = integral_ann(xs = absorb_depth, unit_cell_volume = unit_cell_volume, pack_fraction = pack_fraction, R1 = can_inner_radius_ann, R2 = can_outer_radius_ann)
+            percent_absorb_ann = integral_ann(absorb_depth, unit_cell_volume, pack_fraction, R1 = can_inner_radius_ann, R2 = can_outer_radius_ann)
 
             # Populate dictionaries with `drawing_number` as key
             percent_scatter[drawing_number] = percent_scatter_ann
