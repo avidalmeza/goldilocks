@@ -47,8 +47,8 @@ def sum_total_n(i):
     # Return total sum
     return total_sum
 
-# Define unit_cell_volume() function
-def unit_cell_volume(a, b, c, alpha, gamma, beta):
+# Define uc_volume() function
+def uc_volume(a, b, c, alpha, gamma, beta):
     # Find unit cell volume in A^3
     unit_cell_volume = a * b * c * np.sqrt(1-np.cos(alpha * np.pi/180)**2 - np.cos(beta * np.pi/180)**2 - np.cos(gamma * np.pi/180)**2 + 2*np.cos(alpha * np.pi/180) * np.cos(beta * np.pi/180) * np.cos(gamma * np.pi/180))
     return unit_cell_volume
@@ -254,6 +254,7 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
     file_extension = '.cif'
 
     # Initialize to avoid UnboundLocalError
+    mantid_formula = "" # Note: "", initialize type str
     total_n = 0
 
     # Check if x is a filepath for a CIF
@@ -266,6 +267,9 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
             # Add material to data container/workspace
             SetSample(ws, Material = {'ChemicalFormula': mantid_formula,
                                       'SampleNumberDensity': sample_n_density})
+        else:
+            raise ValueError('File is not a CIF or does not exist.')
+
 
     # If error, check if x is a string and validate with validate_formula() function
     except (ValueError, AttributeError) as e:
@@ -290,7 +294,7 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
             gamma = float(gamma)
     
             # Find unit cell volume in A^3
-            unit_cell_volume = unit_cell_volume(a, b, c, alpha, beta, gamma)
+            unit_cell_volume = uc_volume(a, b, c, alpha, beta, gamma)
     
             # Define sample
             # Add material to data container/workspace
@@ -299,6 +303,8 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
                                       'ZParameter': float(Z_param)})
         else:
             print(f'{x} cannot be added to workspace. It does not match the accepted format nor is it a CIF.')
+            # Exit function if `x` is invalid
+            return 
 
     # Check version for troubleshooting
     # mantid_version = mtd.__version__
@@ -342,7 +348,7 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
     gamma = float(gamma)
     
     # Find unit cell volume in A^3
-    unit_cell_volume = unit_cell_volume(a, b, c, alpha, beta, gamma)
+    unit_cell_volume = uc_volume(a, b, c, alpha, beta, gamma)
     
     # Find theoretical density in g/cc
     theory_density = molecular_mass/unit_cell_volume/0.6022
@@ -502,6 +508,13 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
 
             # info_ann = f'Inner radius: {can_inner_radius}, Outer radius: {can_outer_radius}, Height: {can_height}'
             # can_info[drawing_number] = info_ann
+
+    #### FIND SCATTERING DUE TO CAN ####
+    # if 'flat' in can:
+    # if 'cyl' in can:
+    # Note: integral_ann()
+    # if 'annulus' in can:
+    # Note: Find new volume
 
     # Convert dictionaries to DataFrames
     # Create dictionary `df_dict` of DataFrames
