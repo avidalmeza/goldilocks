@@ -4,7 +4,7 @@ from mantid.simpleapi import CreateSampleWorkspace, SetSample
 from mantid.kernel import Material
 
 # Define unit_cell_volume() function
-def unit_cell_volume(a, b, c, alpha, gamma, beta):
+def uc_volume(a, b, c, alpha, gamma, beta):
     # Find unit cell volume in A^3
     unit_cell_volume = a * b * c * np.sqrt(1-np.cos(alpha * np.pi/180)**2 - np.cos(beta * np.pi/180)**2 - np.cos(gamma * np.pi/180)**2 + 2*np.cos(alpha * np.pi/180) * np.cos(beta * np.pi/180) * np.cos(gamma * np.pi/180))
     return unit_cell_volume
@@ -19,7 +19,8 @@ gamma = 90.0
 Z_param = 1.0
 
 # Find unit cell volume in A^3
-unit_cell_volume = unit_cell_volume(a, b, c, alpha, beta, gamma)
+unit_cell_volume = uc_volume(a, b, c, alpha, beta, gamma)
+print(unit_cell_volume)
 
 # Create empty data container/workspace
 ws = CreateSampleWorkspace()
@@ -34,7 +35,7 @@ sample = ws.sample()
 
 # Retrieve absorption cross-section
 # Define absorption cross section per formula unit in bn/fu
-V_absorb_xs = float(sample.getMaterial().absorbXSection()) # *np.sqrt(25/neutron_energy)
+V_absorb_xs = float(sample.getMaterial().absorbXSection())
 print(f'Absorption cross-section: {V_absorb_xs}')
 
 # Retrieve total scattering cross-section
