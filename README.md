@@ -6,7 +6,21 @@ Oak Ridge National Laboratory (ORNL) operates 11 spectrometers and 12 diffractom
 The cross-section ($\sigma$), measured in barns, is the likelihood of the incident neutron interacting with a target nucleus and differs across elements and isotopes as well as sample holder geometries. Goldilockσ calculates the total scattering cross-section and absorption cross-section for all standard powder cans (flat plate, cylinder, and annular) and how much scattering is due to the can itself. So that external users and internal scientists at SNS and HFIR can choose the "just right" can for their experiment.
 
 ## Instructions
-Users can clone this GitHub repository to access the calculator from the command line or through the Jupyter Notebook.
+Users can clone this GitHub repository to run the calculator from the command line or through the Jupyter Notebook. 
+
+1. Create an environment from the environment.yml file and activate: 
+```
+conda env create -f environment.yml
+conda activate goldilocks
+```
+Make sure the virtual environment is activated before running the calculator from the command line and choose the conda environment as a kernel if accessing the calculator through the Jupyter Notebook.
+
+2. Open xs_calculator.py in a text editor (like Notepad or TextEdit) or IDE (like VS Code or Spyder) and set values
+
+3. Open the Terminal or Command Prompt and execute the script from the command line:
+```
+python xs_calculator.py
+```
 
 ## Acknowledgments
 This project was supported in part by an appointment to the ORNL GEM Fellow Internship Program, sponsored by the U.S. Department of Energy and administered by the Oak Ridge Institute for Science and Education.
