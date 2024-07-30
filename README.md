@@ -8,24 +8,32 @@ The cross-section ($\sigma$), measured in barns, is the likelihood of the incide
 ## Instructions
 Users can clone this GitHub repository to run the calculator from the command line or through the Jupyter Notebook. 
 
-1. Create an environment from the environment.yml file and activate: 
+1. Clone the project from the command line
+```
+git clone https://github.com/avidalmeza/goldilocks.git
+```
+
+2. Create an environment from the environment.yml file and activate
 ```
 conda env create -f environment.yml
 conda activate goldilocks
 ```
 Make sure the virtual environment is activated before running the calculator from the command line and choose the conda environment as a kernel if accessing the calculator through the Jupyter Notebook.
 
-2. Open xs_calculator.py in a text editor (like Notepad or TextEdit) or IDE (like VS Code or Spyder) and set values
+3. Open xs_calculator.py in a text editor or IDE and set values
 
-3. Open the Terminal or Command Prompt and execute the script from the command line:
+4. Execute the updated script
 ```
 python xs_calculator.py
 ```
 
+## Contributing
+Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
+
 ## Acknowledgments
 This project was supported in part by an appointment to the ORNL GEM Fellow Internship Program, sponsored by the U.S. Department of Energy and administered by the Oak Ridge Institute for Science and Education.
 
-### Contributors
+### Authors and Collaborators 
 - Alessandra Vidal Meza, University of California, Santa Barbara
 - Matthew Stone, Neutron Scattering Division, ORNL
 - Andrew Christianson, Materials Science and Technology Division, ORNL
