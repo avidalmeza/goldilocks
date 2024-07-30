@@ -22,7 +22,7 @@ conda activate goldilocks
 ```
 Make sure the virtual environment is activated before running the calculator from the command line.
 
-3. Open xs_calculator.py in a text editor or IDE and set values
+3. Open xs_calculator.py and set values
 
 4. Execute the updated script
 ```
