@@ -1,13 +1,31 @@
-drawing_number,description
-107030510-I8U-8700-A356,0.1 mm flat plate can
-107030510-I8U-8700-A355,0.5 mm flat plate can
-107030510-I8U-8700-A354,1 mm flat plate can
-107030510-I8U-8700-A353,2 mm flat plate can
-107030510-I8U-8700-A352,4 mm flat plate can
-107030510-I8U-8700-A351,6 mm flat plate can
-107030510-I8U-8700-A235,"1/4"" diam cylindrical can - 27 mm flange"
-107030510-I8U-8700-A234,"3/8"" diam cylindrical can - 27 mm flange"
-107030510-I8U-8700-A233,"1/2"" diam cylindrical can - 27 mm flange"
-107030510-I8U-8700-A232,"5/8"" diam cylindrical can - 27 mm flange"
-107030510-I8U-8700-A232-01,"annular insert 1 mm with 5/8"" diam cylindrical can"
-107030510-I8U-8700-A232-02,"annular insert 2 mm with 5/8"" diam cylindrical can"
+id,drawing_number,description
+flatPlate_0p1mm_Al,107030510-I8U-8700-A356,0.1 mm flat plate can
+flatPlate_0p5mm_Al,107030510-I8U-8700-A355,0.5 mm flat plate can
+flatPlate_1mm_Al,107030510-I8U-8700-A354,1 mm flat plate can
+flatPlate_2mm_Al,107030510-I8U-8700-A353,2 mm flat plate can
+flatPlate_4mm_Al,107030510-I8U-8700-A352,4 mm flat plate can
+flatPlate_6mm_Al,107030510-I8U-8700-A351,6 mm flat plate can
+cyl_6p35mm_63p246mm_Al,107030510-I8U-8700-A235,"1/4"" diam cylindrical can - 27 mm flange"
+cyl_9p525mm_63p246mm_Al,107030510-I8U-8700-A234,"3/8"" diam cylindrical can - 27 mm flange"
+cyl_12p7mm_63p246mm_Al,107030510-I8U-8700-A233,"1/2"" diam cylindrical can - 27 mm flange"
+cyl_15p875mm_63p246mm_Al,107030510-I8U-8700-A232,"5/8"" diam cylindrical can - 27 mm flange"
+cyl_3mm_50mm_V,,3 mm diam cylindrical can
+cyl_6mm_50mm_V,,6 mm diam cylindrical can
+cyl_8mm_50mm_V,,8 mm diam cylindrical can
+cyl_10mm_50mm_V,,10 mm diam cylindrical can
+cyl_2p38mm_60mm_Al,,2.38 mm diam cylindrical can
+cyl_3p175mm_60mm_Al,,3.175 mm diam cylindrical can
+cyl_4p2815mm_60mm_Al,,4.3815 mm diam cylindrical can
+cyl_7p62mm_62mm_Al,,7.62 mm diam cylindrical can
+cyl_2p38mm_60mm_Cu,,2.38 mm diam cylindrical can
+cyl_3p175mm_60mm_Cu,,3.175 mm diam cylindrical can
+cyl_4p382mm_60mm_Cu,,4.382 mm diam cylindrical can
+cyl_4p7752mm_31p75mm_Al,,"0.188"" diam tip top can"
+cyl_6p35mm_31p75mm_Al,,"1/4"" diam tip top can"
+cyl_8p763mm_31p75mm_Al,,"0.345"" diam tip top can"
+cyl_4p7752mm_31p75mm_Cu,,"0.188"" diam tip top can"
+cyl_6p35mm_31p75mm_Cu,,"1/4"" diam tip top can"
+cyl_8p763mm_31p75mm_Cu,,"0.345"" diam tip top can"
+annulus_61p722mm_6p6802mm_Al,107030510-I8U-8700-A232-01,"annular insert 1 mm with 5/8"" diam cylindrical can"
+annulus_61p722mm_5p6769mm_Al,107030510-I8U-8700-A232-02,"annular insert 2 mm with 5/8"" diam cylindrical can"
+annulus_5mm_3p81mm_V,,annular insert with 10 mm diam cylindrical can
