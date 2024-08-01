@@ -19,6 +19,7 @@ flat_plate = pd.read_csv(os.path.join(this_dir, 'src', 'dict', 'flatPlate.csv'))
 cylindrical = pd.read_csv(os.path.join(this_dir, 'src', 'dict', 'cylindrical.csv'))
 annulus = pd.read_csv(os.path.join(this_dir, 'src', 'dict', 'annulus.csv'))
 cans_desc = pd.read_csv(os.path.join(this_dir, 'src', 'dict', 'canDescription.csv'))
+material = pd.read_csv(os.path.join(this_dir, 'src', 'dict', 'material.csv'))
 
 # Define remove_parentheses() function
 def remove_parentheses(i):
@@ -53,6 +54,26 @@ def uc_volume(a, b, c, alpha, gamma, beta):
     unit_cell_volume = a * b * c * np.sqrt(1-np.cos(alpha * np.pi/180)**2 - np.cos(beta * np.pi/180)**2 - np.cos(gamma * np.pi/180)**2 + 2*np.cos(alpha * np.pi/180) * np.cos(beta * np.pi/180) * np.cos(gamma * np.pi/180))
     return unit_cell_volume
 
+# Define element_properties() function
+def element_properties(absorb_xs, scatter_xs, molecular_mass, unit_cell_volume):
+    # Find penetration depth due to scattering in cm
+    element_scatter_depth = unit_cell_volume/scatter_xs # in cm
+    
+    # Find penetration depth due to absorption in cm
+    element_absorb_depth = unit_cell_volume/absorb_xs # in cm
+    
+    # Find total penetration depth due to scattering and absorption in cm
+    element_total_depth = unit_cell_volume/(scatter_xs + absorb_xs) # in cm
+    
+    # Find thickness of a 10 percent scatterer in cm
+    element_scatter_thick = np.log(0.9)*element_scatter_depth # in cm
+    
+    # Find theoretical density in g/cc
+    element_theory_density = molecular_mass/unit_cell_volume/0.6022 # in g/cc
+    
+    # Return `element_scatter_depth`, `element_absorb_depth`, `element_total_depth`, `element_scatter_thick`, `element_theory_density`
+    return element_scatter_depth, element_absorb_depth, element_total_depth, element_scatter_thick, element_theory_density
+
 # Define integrand_cyl() function
 def integrand_cyl(x, paramwave):
     # Extract inner can radius (`R1`) and zeta
@@ -78,9 +99,6 @@ def integrand_ann(x, paramwave):
     zeta = paramwave[1]
     R2 = paramwave[2]
 
-    # Define `dval2`
-    dval2 = np.sqrt(R2**2 - x**2)
-
     # If absolute value of `x` is less than inner can radius
     if np.abs(x) < R1:
         dval1 = np.sqrt(R1**2 - x**2)
@@ -88,6 +106,7 @@ def integrand_ann(x, paramwave):
     else:
         dval1 = 0
     
+    dval2 = np.sqrt(R2**2 - x**2)
     integrand = 1 - np.exp(-2 * (dval2-dval1)/zeta)
     return integrand
 
@@ -107,8 +126,36 @@ def integral_ann(xs, unit_cell_volume, pack_fraction, R1, R2):
     # Perform trapezoidal integration
     integration = 100*trapezoid(integrand_values, x_values)
     result = integration/(2*R2)
-
     return result            
+
+# Define calculate_flatPlate() function
+def calculate_flatPlate(can_total_thickness, can_volume, scatter_depth, absorb_depth, theory_density):
+    # Find percent of incident beam that is scattered (assume no absorption)
+    can_percent_scatter = 100 * (1-(np.exp(-(can_total_thickness/scatter_depth))))
+
+    # Find percent of incident beam that is absorbed (assume no scattering)
+    can_percent_absorb = 100 * (1-(np.exp(-(can_total_thickness/absorb_depth))))
+
+    # Find sample mass in grams
+    can_mass = can_volume*theory_density # in grams
+
+    # Return `can_percent_scatter`, `can_percent_absorb`, `can_mass`
+    return can_percent_scatter, can_percent_absorb, can_mass
+
+# Define can_annulus() function
+def can_annulus(scatter_xs, absorb_xs, theory_density, unit_cell_volume, height, inner_radius, outer_radius, volume):
+    # Find percent of incident beam that is scattered (assume no absorption)
+    can_percent_scatter = integral_ann(scatter_xs, unit_cell_volume, pack_fraction = 1.0, R1 = inner_radius, R2 = outer_radius)
+    
+    # Find percent of incident beam that is absorbed (assume no scattering)
+    can_percent_absorb = integral_ann(absorb_xs, unit_cell_volume, pack_fraction = 1.0, R1 = inner_radius, R2 = outer_radius)
+    
+    # Find sample mass in grams
+    volume = height*np.pi*(outer_radius**2 - inner_radius**2) # in cm^3
+    can_mass = volume*theory_density # in grams
+
+    # Return `can_percent_scatter`, `can_percent_absorb`, `can_mass`
+    return can_percent_scatter, can_percent_absorb, can_mass
 
 # Define read_cif() function
 def read_cif(filepath):
@@ -325,21 +372,21 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
 
     # Retrieve absorption cross-section
     # Define absorption cross section per formula unit in bn/fu
-    absorb_xs = (float(sample.getMaterial().absorbXSection()*total_n))*np.sqrt(25/neutron_energy)
+    absorb_xs = (float(sample.getMaterial().absorbXSection()*total_n))*np.sqrt(25/neutron_energy) # in bn/fu
     # print(f'Absorption cross-section: {absorb_xs}')
 
     # Retrieve total scattering cross-section
     # Define scattering cross section per formula unit in bn/fu
-    scatter_xs = float(sample.getMaterial().totalScatterXSection()*total_n)
+    scatter_xs = float(sample.getMaterial().totalScatterXSection()*total_n) # in bn/fu
     # print(f'Total scattering cross-section: {scatter_xs}')
 
     # Retrieve coherent scattering length
-    scatter_length = float(sample.getMaterial().cohScatterLength())
+    scatter_length = float(sample.getMaterial().cohScatterLength()) # in fm
     # print(f'Coherent scattering length: {scatter_length}')
 
     # Retrieve relative molecular mass
     # Define molecular mass in g/mol/fu
-    molecular_mass = float(sample.getMaterial().relativeMolecularMass())
+    molecular_mass = float(sample.getMaterial().relativeMolecularMass()) # in g/mol/fu
     # print(f'Relative molecular mass: {molecular_mass}')
 
     # Convert string values to floats
@@ -354,7 +401,7 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
     unit_cell_volume = uc_volume(a, b, c, alpha, beta, gamma)
     
     # Find theoretical density in g/cc
-    theory_density = molecular_mass/unit_cell_volume/0.6022
+    theory_density = molecular_mass/unit_cell_volume/0.6022 # in g/cc
 
     # Initialize empty dictionaries
     sample_mass = {}
@@ -365,90 +412,89 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
     if 'flat' in can:
         # Iterate over each row in DataFrame
         for index, row in flat_plate.iterrows():
-            # Extract `drawing_number` and `can_volume_mm3` for each row
-            drawing_number = row['drawing_number']
+            # Extract `id` and `can_volume_mm3` for each row
+            id = row['id']
             can_volume_flat = row['can_volume_mm3']/1000 # in cm^3
 
             # Find sample mass in grams
-            sample_mass_flat = can_volume_flat * theory_density * pack_fraction # in grams
+            sample_mass_flat = can_volume_flat*theory_density*pack_fraction # in grams
         
             # Find number of moles of formula unit in sample
             sample_moles_flat = (sample_mass_flat/molecular_mass)*1000
 
-            # Populate dictionaries with `drawing_number` as key
-            sample_mass[drawing_number] = sample_mass_flat
-            can_volume_dict[drawing_number] = can_volume_flat
-            sample_moles[drawing_number] = sample_moles_flat
+            # Populate dictionaries with `id` as key
+            sample_mass[id] = sample_mass_flat
+            can_volume_dict[id] = can_volume_flat
+            sample_moles[id] = sample_moles_flat
 
     # Check if `cyl` is in `can` parameter in xs_calculator() function
     if 'cyl' in can:
     # Iterate over each row in DataFrame
         for index, row in cylindrical.iterrows():
-            # Extract `drawing_number` and `can_volume_mm3` for each row
-            drawing_number = row['drawing_number']
+            # Extract `id` and `can_volume_mm3` for each row
+            id = row['id']
             can_volume_cyl = row['can_volume_mm3']/1000 # in cm^3
 
             # Find sample mass in grams
-            sample_mass_cyl = can_volume_cyl * theory_density * pack_fraction # in grams
+            sample_mass_cyl = can_volume_cyl*theory_density*pack_fraction # in grams
 
             # Find number of moles of formula unit in sample
             sample_moles_cyl = (sample_mass_cyl/molecular_mass)*1000
 
-            # Populate dictionaries with `drawing_number` as key
-            sample_mass[drawing_number] = sample_mass_cyl
-            sample_moles[drawing_number] = sample_moles_cyl
-            can_volume_dict[drawing_number] = can_volume_cyl
+            # Populate dictionaries with `id` as key
+            sample_mass[id] = sample_mass_cyl
+            sample_moles[id] = sample_moles_cyl
+            can_volume_dict[id] = can_volume_cyl
 
     # Check if `annulus` is in `can` parameter in xs_calculator() function
     if 'annulus' in can:
         # Iterate over each row in DataFrame
         for index, row in annulus.iterrows():
-            # Extract `drawing_number` and `can_volume_mm3` for each row
-            drawing_number = row['drawing_number']
+            # Extract `id` and `can_volume_mm3` for each row
+            id = row['id']
             can_volume_ann = row['can_volume_mm3']/1000 # in cm^3
 
             # Find sample mass in grams
-            sample_mass_ann = can_volume_ann * theory_density * pack_fraction # in grams
+            sample_mass_ann = can_volume_ann*theory_density*pack_fraction # in grams
 
             # Find number of moles of formula unit in sample
             sample_moles_ann = (sample_mass_cyl/molecular_mass)*1000
 
-            # Populate dictionaries with `drawing_number` as key
-            sample_mass[drawing_number] = sample_mass_ann
-            sample_moles[drawing_number] = sample_moles_ann
-            can_volume_dict[drawing_number] = can_volume_ann
+            # Populate dictionaries with `id` as key
+            sample_mass[id] = sample_mass_ann
+            sample_moles[id] = sample_moles_ann
+            can_volume_dict[id] = can_volume_ann
     
     # Find penetration depth due to scattering in cm
-    scatter_depth = unit_cell_volume/(scatter_xs * pack_fraction)
+    scatter_depth = unit_cell_volume/(scatter_xs*pack_fraction)
 
     # Find thickness of a 10 percent scatterer in cm
     scatter_thick = np.log(0.9)*scatter_depth
     
     # Find penetration depth due to absorption in cm
-    absorb_depth = unit_cell_volume/(absorb_xs * pack_fraction)
+    absorb_depth = unit_cell_volume/(absorb_xs*pack_fraction)
     
     # Find total penetration depth due to scattering and absorption in cm
-    total_depth = unit_cell_volume/((scatter_xs + absorb_xs) * pack_fraction)
+    total_depth = unit_cell_volume/((scatter_xs+absorb_xs)*pack_fraction)
 
     # Initialize empty dictionaries
     sample_thick = {}
     percent_scatter = {}
     percent_absorb = {}
-    # can_info = {}
 
     # Check if `flat` is in `can` parameter in xs_calculator() function
     if 'flat' in can:
         # Iterate over each row in DataFrame
         for index, row in flat_plate.iterrows():
-            # Extract `drawing_number` and `can_area_mm2` for each row
-            drawing_number = row['drawing_number']
+            # Extract `id` and `can_area_mm2` for each row
+            id = row['id']
             sample_area = row['can_area_mm2']
 
-            # Find thickness of sample spread homogenously over sample can in mm
-            sample_thick_flat = row['sample_thick_mm']/10
+            # Find thickness of sample spread homogenously over sample can
+            sample_thick_flat = row['sample_thick_mm']/10 # in cm
 
             # Extract sample mass from dictionary
-            # sample_mass_i = sample_mass.get(drawing_number)
+            # sample_mass_i = sample_mass.get(id)
 
             # Find percent of incident beam that is scattered (assume no absorption)
             percent_scatter_flat = 100 * (1-(np.exp(-(sample_thick_flat/scatter_depth))))
@@ -456,22 +502,18 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
             # Find percent of incident beam that is absorbed (assume no scattering)
             percent_absorb_flat =  100 * (1-(np.exp(-(sample_thick_flat/absorb_depth))))
             
-            # Populate dictionaries with `drawing_number` as key
-            sample_thick[drawing_number] = sample_thick_flat
-            percent_scatter[drawing_number] = percent_scatter_flat
-            percent_absorb[drawing_number] = percent_absorb_flat
-
-            # info_flat = f'Thickness: {can_thick}, Area: {can_area}'
-            # can_info[drawing_number] = info_flat
+            # Populate dictionaries with `id` as key
+            sample_thick[id] = sample_thick_flat
+            percent_scatter[id] = percent_scatter_flat
+            percent_absorb[id] = percent_absorb_flat
 
     # Check if `cyl` is in `can` parameter in xs_calculator() function
     if 'cyl' in can:
         # Iterate over each row in DataFrame
         for index, row in cylindrical.iterrows():
-            # Extract `drawing_number`, `can_inner_radius_mm`, and `can_thick_mm` for each row
-            drawing_number = row['drawing_number']
-            can_inner_radius = row['can_inner_radius_mm']
-            can_thick = row['can_thick_mm']
+            # Extract `id`, `can_inner_radius_mm`, and `can_thick_mm` for each row
+            id = row['id']
+            can_inner_radius = row['can_inner_radius_mm']/10 # in cm
 
             # Find percent of incident beam that is scattered (assume no absorption)
             percent_scatter_cyl = integral_cyl(scatter_xs, unit_cell_volume, pack_fraction, R1 = can_inner_radius)
@@ -479,182 +521,167 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
             # Find percent of incident beam that is absorbed (assume no scattering)
             percent_absorb_cyl = integral_cyl(absorb_xs, unit_cell_volume, pack_fraction, R1 = can_inner_radius)
 
-            # Populate dictionaries with `drawing_number` as key
-            percent_scatter[drawing_number] = percent_scatter_cyl
-            percent_absorb[drawing_number] = percent_absorb_cyl
-
-            # info_cyl = f'Radius: {can_inner_radius}, Height: {can_height}'
-            # can_info[drawing_number] = info_cyl
+            # Populate dictionaries with `id` as key
+            percent_scatter[id] = percent_scatter_cyl
+            percent_absorb[id] = percent_absorb_cyl
 
     # Check if `annulus` is in `can` parameter in xs_calculator() function
     if 'annulus' in can:
         # Iterate over each row in DataFrame
         for index, row in annulus.iterrows():
-            # Extract `drawing_number`, `insert_inner_radius_mm`, and `insert_outer_radius_mm` for each row
-            drawing_number = row['drawing_number']
-            insert_inner_radius_ann = row['insert_inner_radius_mm']
-            insert_outer_radius_ann = row['insert_outer_radius_mm']
+            # Extract `id`, `insert_inner_radius_mm`, and `insert_outer_radius_mm` for each row
+            id = row['id']
+            sample_inner_radius_ann = row['sample_inner_radius_mm']/10 # in cm
+            sample_outer_radius_ann = row['sample_outer_radius_mm']/10 # in cm
+            # insert_inner_radius_ann = row['insert_inner_radius_mm']
+            # insert_outer_radius_ann = row['insert_outer_radius_mm']
 
             # Find percent of incident beam that is scattered (assume no absorption)
-            percent_scatter_ann = integral_ann(scatter_xs, unit_cell_volume, pack_fraction, R1 = insert_inner_radius_ann, R2 = insert_outer_radius_ann)
+            percent_scatter_ann = integral_ann(scatter_xs, unit_cell_volume, pack_fraction, R1 = sample_inner_radius_ann, R2 = sample_outer_radius_ann)
 
             # Find percent of incident beam that is absorbed (assume no scattering)
-            percent_absorb_ann = integral_ann(absorb_xs, unit_cell_volume, pack_fraction, R1 = insert_inner_radius_ann, R2 = insert_outer_radius_ann)
+            percent_absorb_ann = integral_ann(absorb_xs, unit_cell_volume, pack_fraction, R1 = sample_inner_radius_ann, R2 = sample_outer_radius_ann)
 
-            # Populate dictionaries with `drawing_number` as key
-            percent_scatter[drawing_number] = percent_scatter_ann
-            percent_absorb[drawing_number] = percent_absorb_ann
-
-            # info_ann = f'Inner radius: {can_inner_radius}, Outer radius: {can_outer_radius}, Height: {can_height}'
-            # can_info[drawing_number] = info_ann
+            # Populate dictionaries with `id` as key
+            percent_scatter[id] = percent_scatter_ann
+            percent_absorb[id] = percent_absorb_ann
 
     """
     Find scattering and absorption for sample can
     """
-    # Set aluminum variables
-    # Refer to src/aluminium.py
-    Al_absorb_xs = 0.23099999999999998*np.sqrt(25/neutron_energy) # in bn/fu
-    Al_scatter_xs = 1.503 # in bn/fu
-    Al_scatter_length = 3.449
-    Al_molecular_mass = 26.981538 # in g/mol/fu
-    Al_unit_cell_volume = 66.40060487378402
+    # Initialize empty dictionaries
+    can_percent_scatter = {}
+    can_percent_absorb = {}
+    can_mass = {}
 
-    # Find penetration depth due to scattering in cm
-    Al_scatter_depth = Al_unit_cell_volume/Al_scatter_xs
+    # Check if `flat` is in `can` parameter in xs_calculator() function
+    if 'flat' in can:
+        # Iterate over each row in DataFrame
+        for index, row in flat_plate.iterrows():
+            id = row['id']
+            can_material = row['material']
+            can_total_thickness = row['can_total_thick_mm']/10  # in cm
+            can_volume = row['can_volume_mm3']/1000  # in cm^3
 
-    # Find thickness of a 10 percent scatterer in cm
-    Al_scatter_thick = np.log(0.9)*Al_scatter_depth
-    
-    # Find penetration depth due to absorption in cm
-    Al_absorb_depth = Al_unit_cell_volume/Al_absorb_xs
-    
-    # Find total penetration depth due to scattering and absorption in cm
-    Al_total_depth = Al_unit_cell_volume/(Al_scatter_xs + Al_absorb_xs)
+            element_row = material[material['material'] == can_material].iloc[0]
+            
+            absorb_xs = element_row['absorb_xs']*np.sqrt(25/neutron_energy) # in bn/fu
+            scatter_xs = element_row['scatter_xs']
+            molecular_mass = element_row['molecular_mass']
+            unit_cell_volume = element_row['unit_cell_volume']
 
-    # Set vanadium values
-    # Refer to src/vanadium.py
-    V_absorb_xs = 5.08*np.sqrt(25/neutron_energy) # in bn/fu
-    V_scatter_xs = 5.1 # in bn/fu
-    V_scatter_length = 0.3824
-    V_molecular_mass = 50.9415 # in g/mol/fu
-    V_unit_cell_volume = 27.815372820899004
+            element_scatter_depth, element_absorb_depth, element_total_depth, element_scatter_thick, element_theory_density = element_properties(absorb_xs, scatter_xs, molecular_mass, unit_cell_volume)
+            
+            can_percent_scatter_flat, can_percent_absorb_flat, can_mass_flat = calculate_flatPlate(can_total_thickness = can_total_thickness, can_volume = can_volume, scatter_depth = element_scatter_depth, absorb_depth = element_absorb_depth, theory_density = element_theory_density)
 
-    # Find penetration depth due to scattering in cm
-    V_scatter_depth = V_unit_cell_volume/V_scatter_xs
+            # Populate dictionaries with `id` as key
+            can_percent_scatter[id] = can_percent_scatter_flat
+            can_percent_absorb[id] = can_percent_absorb_flat
+            can_mass[id] = can_mass_flat
 
-    # Find thickness of a 10 percent scatterer in cm
-    V_scatter_thick = np.log(0.9)*V_scatter_depth
-    
-    # Find penetration depth due to absorption in cm
-    V_absorb_depth = V_unit_cell_volume/V_absorb_xs
-    
-    # Find total penetration depth due to scattering and absorption in cm
-    V_total_depth = V_unit_cell_volume/(V_scatter_xs + V_absorb_xs)
+    # Check if `annulus` is in `can` parameter in xs_calculator() function
+    if 'cyl' in can:
+        # Iterate over each row in DataFrame
+        for index, row in cylindrical.iterrows():
+            id = row['id']
+            can_material = row['material']
+            can_inner_radius = row['can_inner_radius_mm']/10 # in cm
+            can_outer_radius = row['can_outer_radius_mm']/10 # in cm
+            sample_height = row['sample_height_mm']/10 # in cm
 
-    # Set copper values
-    # Refer to sr/copper
-    Cu_absorb_xs = 3.7799999999999994
-    Cu_scatter_xs = 8.03
-    Cu_scatter_length = 7.718
-    Cu_molecular_mass = 63.546
-    Cu_unit_cell_volume = 47.433996788598996
+            element_row = material[material['material'] == can_material].iloc[0]
+            
+            absorb_xs = element_row['absorb_xs']*np.sqrt(25/neutron_energy) # in bn/fu
+            scatter_xs = element_row['scatter_xs']
+            molecular_mass = element_row['molecular_mass']
+            unit_cell_volume = element_row['unit_cell_volume']
+            
+            can_volume = sample_height*np.pi*(can_inner_radius**2-can_outer_radius**2) # in cm^3
 
-    # Find penetration depth due to scattering in cm
-    Cu_scatter_depth = Cu_unit_cell_volume/Cu_scatter_xs
+            element_scatter_depth, element_absorb_depth, element_total_depth, element_scatter_thick, element_theory_density = element_properties(absorb_xs, scatter_xs, molecular_mass, unit_cell_volume)
+            
+            can_percent_scatter_cyl, can_percent_absorb_cyl, can_mass_cyl = can_annulus(scatter_xs = scatter_xs, absorb_xs = absorb_xs, theory_density = element_theory_density, unit_cell_volume = unit_cell_volume, height = sample_height, inner_radius = can_inner_radius, outer_radius = can_outer_radius, volume = can_volume)
 
-    # Find thickness of a 10 percent scatterer in cm
-    Cu_scatter_thick = np.log(0.9)*Cu_scatter_depth
-    
-    # Find penetration depth due to absorption in cm
-    Cu_absorb_depth = Cu_unit_cell_volume/Cu_absorb_xs
-    
-    # Find total penetration depth due to scattering and absorption in cm
-    Cu_total_depth = Cu_unit_cell_volume/(Cu_scatter_xs + Cu_absorb_xs)
+            # Populate dictionaries with `id` as key
+            can_percent_scatter[id] = can_percent_scatter_cyl
+            can_percent_absorb[id] = can_percent_absorb_cyl
+            can_mass[id] = can_mass_cyl
 
-    # if 'flat' in can:
-    #     Iterate over each row in DataFrame
-    #     for index, row in flat_plate.iterrows():
-    #         Extract `drawing_number` and `material_test`
-    #         drawing_number = row['drawing_number']
-    #         can_material = row['material_test']
-                # total thickness
-                # convert to cm
+    # Check if `annulus` is in `can` parameter in xs_calculator() function
+    if 'annulus' in can:
+        # Iterate over each row in DataFrame
+        for index, row in annulus.iterrows():
+            id = row['id']
+            can_material = row['material']
 
-    #         if can_material == 'Al':
-    #             Find percent of incident beam that is scattered (assume no absorption)
-    #             Al_percent_scatter_flat = 100 * (1-(np.exp(-(sample_thick_flat/Al_scatter_depth))))
+            R1 = row['insert_inner_radius_mm']/10 # in cm
+            R2 = row['insert_outer_radius_mm']/10 # in cm
+            R3 = row['can_inner_radius_mm']/10 # in cm
+            R4 = row['can_outer_radius_mm']/10 # in cm
+            H = row['sample_height_mm']/10 # in cm
+
+            can_volume_inner = H*np.pi*(R2**2 - R1**2) # in cm^3
+            can_volume_outer = H*np.pi*(R4**2 - R3**2) # in cm^3
+            total_volume = can_volume_inner + can_volume_outer # in cm^3
+            
+            t = np.sqrt(R2**2 - R1**2 + R4**2) - R4 # in cm
+            new_R4 = R4 + t # in cm
+            new_can_volume_outer = H*np.pi*(new_R4**2 - R3**2) # in cm^3
+            new_total_volume = can_volume_inner + new_can_volume_outer # in cm^3
+
+            element_row = material[material['material'] == can_material].iloc[0]
+            
+            absorb_xs = element_row['absorb_xs']*np.sqrt(25/neutron_energy) # in bn/fu
+            scatter_xs = element_row['scatter_xs']
+            molecular_mass = element_row['molecular_mass']
+            unit_cell_volume = element_row['unit_cell_volume']
+
+            element_scatter_depth, element_absorb_depth, element_total_depth, element_scatter_thick, element_theory_density = element_properties(absorb_xs, scatter_xs, molecular_mass, unit_cell_volume)
+            
+            can_percent_scatter_ann, can_percent_absorb_ann, can_mass_ann = can_annulus(scatter_xs = scatter_xs, absorb_xs = absorb_xs, theory_density = element_theory_density, unit_cell_volume = unit_cell_volume, height = H, inner_radius = R3, outer_radius = new_R4, volume = new_total_volume)
+            
+            # Populate dictionaries with `id` as key
+            can_percent_scatter[id] = can_percent_scatter_ann
+            can_percent_absorb[id] = can_percent_absorb_ann
+            can_mass[id] = can_mass_ann
         
-    #             Find percent of incident beam that is absorbed (assume no scattering)
-    #             Al_percent_absorb_flat =  100 * (1-(np.exp(-(sample_thick_flat/Al_absorb_depth))))
-
-    #         elif can_material == 'V':
-    #             Find percent of incident beam that is scattered (assume no absorption)
-    #             V_percent_scatter_flat = 100 * (1-(np.exp(-(sample_thick_flat/V_scatter_depth))))
-        
-    #             Find percent of incident beam that is absorbed (assume no scattering)
-    #             V_percent_absorb_flat =  100 * (1-(np.exp(-(sample_thick_flat/V_absorb_depth))))
-
-    # if 'cyl' in can:
-    #     Iterate over each row in DataFrame
-    #     for index, row in cylindrical.iterrows():
-    #         Extract `drawing_number`, `can_inner_radius_mm`, and `can_outer_radius_mm` for each row
-    #         if can_material == 'Al':
-    #             Find percent of incident beam that is scattered (assume no absorption)
-    #             Al_percent_scatter_cyl = integral_ann(Al_scatter_depth, Al_unit_cell_volume, pack_fraction, R1 = can_inner_radius_ann, R2 = can_outer_radius_ann)
-
-    #             Find percent of incident beam that is absorbed (assume no scattering)
-    #             Al_percent_absorb_cyl = integral_ann(Al_absorb_depth, Al_unit_cell_volume, pack_fraction, R1 = can_inner_radius_ann, R2 = can_outer_radius_ann)
-
-    #         elif can_material == 'V':
-    #             Find percent of incident beam that is scattered (assume no absorption)
-    #             V_percent_scatter_cyl = integral_ann(V_scatter_depth, V_unit_cell_volume, pack_fraction, R1 = can_inner_radius_ann, R2 = can_outer_radius_ann)
-
-    #             Find percent of incident beam that is absorbed (assume no scattering)
-    #             V_percent_absorb_cyl = integral_ann(V_absorb_depth, V_unit_cell_volume, pack_fraction, R1 = can_inner_radius_ann, R2 = can_outer_radius_ann)
-
-    # if 'annulus' in can:
-    #     Iterate over each row in DataFrame
-    #     for index, row in annulus.iterrows():
-    #         Extract `drawing_number`, `can_inner_radius_mm`, and `can_outer_radius_mm` for each row
-    #         drawing_number = row['drawing_number']
-    #         r1 = row['can_outer_radius_mm']
-    #         r2 = row['can_inner_radius_mm']
-    #         r3 = row['sample_outer_radius_mm']
-    #         r4 = row['sample_inner_radius_mm']
-    #         height = row['sample_height_mm']
-    #         can_volume_inner = np.pi*height*(r2*(r2*r1)*r1)
-    #         can_volume_outer = np.pi*height*(r4*(r4*r3)*r3)
-    #         total_volume = can_volume_inner + can_volume_outer
-    #         t = np.sqrt(r2**2 - r1**2 + r4**2)-r4
-    #         new_r4 = r4 + t
-    #         new_volume = np.pi*height*(new_r4**2 - r3**2)
-
-    #         drawing_number = row['drawing_number']
-    #         can_inner_radius_ann = row['can_inner_radius_mm']
-    #         can_outer_radius_ann = row['can_outer_radius_mm']
-
-    #         if can_material == 'Al':
-
     # Convert dictionaries to DataFrames
     # Create dictionary `df_dict` of DataFrames
     df_dict = {
-        'sample_mass': pd.DataFrame(sample_mass.items(), columns = ['drawing_number', 'sample_mass']),
-        'can_volume': pd.DataFrame(can_volume_dict.items(), columns = ['drawing_number', 'can_volume']),
-        'sample_moles': pd.DataFrame(sample_moles.items(), columns = ['drawing_number', 'sample_moles']),
-        'sample_thick': pd.DataFrame(sample_thick.items(), columns = ['drawing_number', 'sample_thick']),
-        'percent_scatter': pd.DataFrame(percent_scatter.items(), columns = ['drawing_number', 'percent_scatter']),
-        'percent_absorb': pd.DataFrame(percent_absorb.items(), columns = ['drawing_number', 'percent_absorb'])
+        'sample_mass_g': pd.DataFrame(sample_mass.items(), columns = ['id', 'sample_mass_g']),
+        'can_volume_cm3': pd.DataFrame(can_volume_dict.items(), columns = ['id', 'can_volume_cm3']),
+        'sample_moles': pd.DataFrame(sample_moles.items(), columns = ['id', 'sample_moles']),
+        'sample_thick_cm': pd.DataFrame(sample_thick.items(), columns = ['id', 'sample_thick_cm']),
+        'percent_scatter': pd.DataFrame(percent_scatter.items(), columns = ['id', 'percent_scatter']),
+        'percent_absorb': pd.DataFrame(percent_absorb.items(), columns = ['id', 'percent_absorb']),
+        'can_percent_scatter': pd.DataFrame(can_percent_scatter.items(), columns = ['id', 'can_percent_scatter']),
+        'can_percent_absorb': pd.DataFrame(can_percent_absorb.items(), columns = ['id', 'can_percent_absorb']),
+        'can_mass_g': pd.DataFrame(can_mass.items(), columns = ['id', 'can_mass_g']),
     }
 
+    # Extract first DataFrame from dictionary
     # Extract DataFrame `sample_mass` from dictionary
-    df = df_dict['sample_mass']
+    df = df_dict['sample_mass_g']
 
-    # Merge with left join on `drawing_number`
+    # Merge DataFrames in dicitonary with left join on `id`
     for key in list(df_dict.keys())[1:]:
-        df = df.merge(df_dict[key], on = 'drawing_number', how = 'left')
+        df = df.merge(df_dict[key], on = 'id', how = 'left')
 
-    # Merge with left join on `drawing_number`
-    df_concat = pd.merge(cans_desc, df, on = 'drawing_number', how = 'left')
+    # Merge with left join on `id` with `cans_desc` DataFrame
+    df_concat = pd.merge(cans_desc, df, on = 'id', how = 'left')
+    
+    # Define conditions and corresponding flags
+    conditions = [
+        (df_concat['percent_scatter'] > 10) | (df_concat['percent_absorb'] > 10),
+        df_concat['can_percent_absorb'] > df_concat['percent_absorb'],
+        df_concat['can_percent_scatter'] > df_concat['percent_scatter']
+    ]
+
+    # Define flags
+    flags = ['*', '**', '***']
+
+    # Use np.select() to create new column
+    df_concat['Flag'] = np.select(conditions, flags, default = np.nan)
 
     # Drop `drawing_number` column
     df_concat.drop('drawing_number', axis = 1, inplace = True)
@@ -682,7 +709,7 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
     =========================================
         Sample Can Independent Values
     =========================================
-    Calculated unit cell volume (\Angs^3): {round(unit_cell_volume, 3)}
+    Calculated unit cell volume (Å^3): {round(unit_cell_volume, 3)}
     Scattering cross section (bn/fu): {round(scatter_xs, 3)}
     Absorption cross section (bn/fu): {round(absorb_xs, 3)}
     Scattering penetration depth (cm): {round(scatter_depth, 3)}
@@ -693,3 +720,4 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
     ''')
 
     print(df_concat)
+    # df_concat.style
