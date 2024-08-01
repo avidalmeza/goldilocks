@@ -420,7 +420,7 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
             sample_mass_flat = can_volume_flat*theory_density*pack_fraction # in grams
         
             # Find number of moles of formula unit in sample
-            sample_moles_flat = (sample_mass_flat/molecular_mass)*1000
+            sample_moles_flat = sample_mass_flat/molecular_mass
 
             # Populate dictionaries with `id` as key
             sample_mass[id] = sample_mass_flat
@@ -439,7 +439,7 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
             sample_mass_cyl = can_volume_cyl*theory_density*pack_fraction # in grams
 
             # Find number of moles of formula unit in sample
-            sample_moles_cyl = (sample_mass_cyl/molecular_mass)*1000
+            sample_moles_cyl = sample_mass_cyl/molecular_mass
 
             # Populate dictionaries with `id` as key
             sample_mass[id] = sample_mass_cyl
@@ -458,7 +458,7 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
             sample_mass_ann = can_volume_ann*theory_density*pack_fraction # in grams
 
             # Find number of moles of formula unit in sample
-            sample_moles_ann = (sample_mass_cyl/molecular_mass)*1000
+            sample_moles_ann = sample_mass_cyl/molecular_mass
 
             # Populate dictionaries with `id` as key
             sample_mass[id] = sample_mass_ann
@@ -739,6 +739,7 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
         Sample Can Independent Values
     =========================================
     Calculated unit cell volume (Å^3): {round(unit_cell_volume, 3)}
+    Molecular mass (g/mol/fu): {round(molecular_mass, 3)}
     Scattering cross section (bn/fu): {round(scatter_xs, 3)}
     Absorption cross section (bn/fu): {round(absorb_xs, 3)}
     Scattering penetration depth (cm): {round(scatter_depth, 3)}
