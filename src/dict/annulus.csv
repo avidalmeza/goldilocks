@@ -1,4 +1,4 @@
-id,material,sample_height_mm,sample_inner_radius_mm,sample_outer_radius_mm,sample_thick_mm,can_volume_mm3,can_inner_radius_mm,can_outer_radius_mm,can_thick_mm,insert_inner_radius_mm,insert_outer_radius_mm,insert_thick_mm
-annulus_61p722mm_6p6802mm_Al,Al,61.722,6.9342,7.9375,1.0033,2893.218885,7.9375,8.3185,0.381,6.6802,6.9342,0.254
-annulus_61p722mm_5p6769mm_Al,Al,61.722,5.9309,7.9375,2.0066,5396.063232,7.9375,8.3185,0.381,5.6769,5.9309,0.254
-annulus_5mm_3p81mm_V,V,5,50,,,1460.744175,5,5.1524,0.1524,3.81,3.9624,0.1524
+id,material,sample_height_mm,sample_inner_radius_mm,sample_outer_radius_mm,sample_thick_mm,can_volume_mm3,can_inner_radius_mm,can_outer_radius_mm,can_thick_mm,insert_inner_radius_mm,insert_outer_radius_mm,insert_thick_mm,can_material_volume_mm3,can_material_mass_g
+annulus_61p722mm_6p6802mm_Al,Al,61.722,6.9342,7.9375,1.0033,2893.218885,7.9375,8.3185,0.381,6.6802,6.9342,0.254,1.871,5.053
+annulus_61p722mm_5p6769mm_Al,Al,61.722,5.9309,7.9375,2.0066,5396.063232,7.9375,8.3185,0.381,5.6769,5.9309,0.254,1.773,4.786
+annulus_5mm_3p81mm_V,V,5,50,,,1460.744175,5,5.1524,0.1524,3.81,3.9624,0.1524,0.429,2.618
