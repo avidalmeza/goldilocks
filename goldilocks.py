@@ -511,7 +511,7 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
     if 'cyl' in can:
         # Iterate over each row in DataFrame
         for index, row in cylindrical.iterrows():
-            # Extract `id`, `can_inner_radius_mm`, and `can_thick_mm` for each row
+            # Extract `id` and `can_inner_radius_mm` for each row
             id = row['id']
             can_inner_radius = row['can_inner_radius_mm']/10 # in cm
 
@@ -529,12 +529,10 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
     if 'annulus' in can:
         # Iterate over each row in DataFrame
         for index, row in annulus.iterrows():
-            # Extract `id`, `insert_inner_radius_mm`, and `insert_outer_radius_mm` for each row
+            # Extract `id`, `sample_inner_radius_mm`, and `sample_outer_radius_mm` for each row
             id = row['id']
             sample_inner_radius_ann = row['sample_inner_radius_mm']/10 # in cm
             sample_outer_radius_ann = row['sample_outer_radius_mm']/10 # in cm
-            # insert_inner_radius_ann = row['insert_inner_radius_mm']
-            # insert_outer_radius_ann = row['insert_outer_radius_mm']
 
             # Find percent of incident beam that is scattered (assume no absorption)
             percent_scatter_ann = integral_ann(scatter_xs, unit_cell_volume, pack_fraction, R1 = sample_inner_radius_ann, R2 = sample_outer_radius_ann)
@@ -558,6 +556,7 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
     if 'flat' in can:
         # Iterate over each row in DataFrame
         for index, row in flat_plate.iterrows():
+            # Extract `id`, `material`, `can_total_thick_mm`, and `can_volume_mm3` for each row
             id = row['id']
             can_material = row['material']
             can_total_thickness = row['can_total_thick_mm']/10  # in cm
@@ -565,13 +564,20 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
 
             element_row = material[material['material'] == can_material].iloc[0]
             
+            # Set absorption cross-section in bn/fu
             absorb_xs = element_row['absorb_xs']*np.sqrt(25/neutron_energy) # in bn/fu
-            scatter_xs = element_row['scatter_xs']
+            # Set total scattering cross-section in bn/fu
+            scatter_xs = element_row['scatter_xs'] # in bn/fu
+            # Set relative molecular mass
             molecular_mass = element_row['molecular_mass']
+            # Set unit cell volume
             unit_cell_volume = element_row['unit_cell_volume']
 
             element_scatter_depth, element_absorb_depth, element_total_depth, element_scatter_thick, element_theory_density = element_properties(absorb_xs, scatter_xs, molecular_mass, unit_cell_volume)
             
+            # Find percent of incident beam that is scattered (assume no absorption)
+            # Find percent of incident beam that is absorbed (assume no scattering)
+            # Find can mass in grams
             can_percent_scatter_flat, can_percent_absorb_flat, can_mass_flat = calculate_flatPlate(can_total_thickness = can_total_thickness, can_volume = can_volume, scatter_depth = element_scatter_depth, absorb_depth = element_absorb_depth, theory_density = element_theory_density)
 
             # Populate dictionaries with `id` as key
@@ -583,6 +589,7 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
     if 'cyl' in can:
         # Iterate over each row in DataFrame
         for index, row in cylindrical.iterrows():
+            # Extract `id`, `material`, `can_inner_radius_mm`, `can_outer_radius_mm`, and `sample_height_mm` for each row
             id = row['id']
             can_material = row['material']
             can_inner_radius = row['can_inner_radius_mm']/10 # in cm
@@ -591,15 +598,23 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
 
             element_row = material[material['material'] == can_material].iloc[0]
             
+            # Set absorption cross-section in bn/fu
             absorb_xs = element_row['absorb_xs']*np.sqrt(25/neutron_energy) # in bn/fu
-            scatter_xs = element_row['scatter_xs']
+            # Set total scattering cross-section in bn/fu
+            scatter_xs = element_row['scatter_xs'] # in bn/fu
+            # Set relative molecular mass
             molecular_mass = element_row['molecular_mass']
+            # Set unit cell volume
             unit_cell_volume = element_row['unit_cell_volume']
             
+            # Find volume of can itself
             can_volume = sample_height*np.pi*(can_inner_radius**2-can_outer_radius**2) # in cm^3
 
             element_scatter_depth, element_absorb_depth, element_total_depth, element_scatter_thick, element_theory_density = element_properties(absorb_xs, scatter_xs, molecular_mass, unit_cell_volume)
             
+            # Find percent of incident beam that is scattered (assume no absorption)
+            # Find percent of incident beam that is absorbed (assume no scattering)
+            # Find can mass in grams
             can_percent_scatter_cyl, can_percent_absorb_cyl, can_mass_cyl = can_annulus(scatter_xs = scatter_xs, absorb_xs = absorb_xs, theory_density = element_theory_density, unit_cell_volume = unit_cell_volume, height = sample_height, inner_radius = can_inner_radius, outer_radius = can_outer_radius, volume = can_volume)
 
             # Populate dictionaries with `id` as key
@@ -611,33 +626,44 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
     if 'annulus' in can:
         # Iterate over each row in DataFrame
         for index, row in annulus.iterrows():
+            # Extract `id`, `material`, `insert_inner_radius_mm`, `insert_outer_radius_mm`, `can_inner_radius_mm`, `can_outer_radius_mm`, and `sample_height_mm` for each row
             id = row['id']
             can_material = row['material']
-
             R1 = row['insert_inner_radius_mm']/10 # in cm
             R2 = row['insert_outer_radius_mm']/10 # in cm
             R3 = row['can_inner_radius_mm']/10 # in cm
             R4 = row['can_outer_radius_mm']/10 # in cm
             H = row['sample_height_mm']/10 # in cm
 
+            # Find volume of can itself
             can_volume_inner = H*np.pi*(R2**2 - R1**2) # in cm^3
             can_volume_outer = H*np.pi*(R4**2 - R3**2) # in cm^3
             total_volume = can_volume_inner + can_volume_outer # in cm^3
             
+            # Find new outer radius
             t = np.sqrt(R2**2 - R1**2 + R4**2) - R4 # in cm
             new_R4 = R4 + t # in cm
+
+            # Find volume of can itself
             new_can_volume_outer = H*np.pi*(new_R4**2 - R3**2) # in cm^3
             new_total_volume = can_volume_inner + new_can_volume_outer # in cm^3
 
             element_row = material[material['material'] == can_material].iloc[0]
             
+            # Set absorption cross-section in bn/fu
             absorb_xs = element_row['absorb_xs']*np.sqrt(25/neutron_energy) # in bn/fu
-            scatter_xs = element_row['scatter_xs']
+            # Set total scattering cross-section in bn/fu
+            scatter_xs = element_row['scatter_xs'] # in bn/fu
+            # Set relative molecular mass
             molecular_mass = element_row['molecular_mass']
+            # Set unit cell volume
             unit_cell_volume = element_row['unit_cell_volume']
 
             element_scatter_depth, element_absorb_depth, element_total_depth, element_scatter_thick, element_theory_density = element_properties(absorb_xs, scatter_xs, molecular_mass, unit_cell_volume)
             
+            # Find percent of incident beam that is scattered (assume no absorption)
+            # Find percent of incident beam that is absorbed (assume no scattering)
+            # Find can mass in grams
             can_percent_scatter_ann, can_percent_absorb_ann, can_mass_ann = can_annulus(scatter_xs = scatter_xs, absorb_xs = absorb_xs, theory_density = element_theory_density, unit_cell_volume = unit_cell_volume, height = H, inner_radius = R3, outer_radius = new_R4, volume = new_total_volume)
             
             # Populate dictionaries with `id` as key
