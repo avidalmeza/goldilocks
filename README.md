@@ -15,21 +15,23 @@ Users can clone this GitHub repository to run the calculator from Terminal, Comm
 git clone https://github.com/avidalmeza/goldilocks.git
 ```
 
-2. Create an environment from the environment.yml file and activate
+2. Create an environment from *environment.yml* and activate
 ```
 conda env create -f environment.yml
 conda activate goldilocks
 ```
 Make sure the virtual environment is activated before running the calculator from the command line.
 
-3. Open xs_calculator.py and set values
+3. Open *xs_calculator.py* and set values
 
-4. Execute the updated script
+Refer to the [documentation](/documentation.md) for the calculator inputs and outputs as well as use guidelines. 
+
+4. Execute updated *xs_calculator.py*
 ```
 python xs_calculator.py
 ```
 
-Users can also run the calculator within the Jupyter Notebook, xs_calculator.ipynb. Make sure to first set the conda environment as a kernel.
+Users can also run the calculator within the Jupyter Notebook, *xs_calculator.ipynb*. Make sure to first set the conda environment as a kernel.
 
 ## Contributing
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
@@ -37,7 +39,7 @@ Pull requests are welcome. For major changes, please open an issue first to disc
 ## Acknowledgments
 This project was supported in part by an appointment to the ORNL GEM Fellow Internship Program, sponsored by the U.S. Department of Energy and administered by the Oak Ridge Institute for Science and Education.
 
-### Authors and Collaborators 
+### Authors and Contributors 
 - Alessandra Vidal Meza, University of California, Santa Barbara
 - Matthew Stone, Neutron Scattering Division, ORNL
 - Andrew Christianson, Materials Science and Technology Division, ORNL
