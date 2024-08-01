@@ -54,25 +54,25 @@ def uc_volume(a, b, c, alpha, gamma, beta):
     unit_cell_volume = a * b * c * np.sqrt(1-np.cos(alpha * np.pi/180)**2 - np.cos(beta * np.pi/180)**2 - np.cos(gamma * np.pi/180)**2 + 2*np.cos(alpha * np.pi/180) * np.cos(beta * np.pi/180) * np.cos(gamma * np.pi/180))
     return unit_cell_volume
 
-# Define element_properties() function
-def element_properties(absorb_xs, scatter_xs, molecular_mass, unit_cell_volume):
+# Define material_properties() function
+def material_properties(absorb_xs, scatter_xs, molecular_mass, unit_cell_volume):
     # Find penetration depth due to scattering in cm
-    element_scatter_depth = unit_cell_volume/scatter_xs # in cm
+    material_scatter_depth = unit_cell_volume/scatter_xs # in cm
     
     # Find penetration depth due to absorption in cm
-    element_absorb_depth = unit_cell_volume/absorb_xs # in cm
+    material_absorb_depth = unit_cell_volume/absorb_xs # in cm
     
     # Find total penetration depth due to scattering and absorption in cm
-    element_total_depth = unit_cell_volume/(scatter_xs + absorb_xs) # in cm
+    material_total_depth = unit_cell_volume/(scatter_xs + absorb_xs) # in cm
     
     # Find thickness of a 10 percent scatterer in cm
-    element_scatter_thick = np.log(0.9)*element_scatter_depth # in cm
+    material_scatter_thick = np.log(0.9)*material_scatter_depth # in cm
     
     # Find theoretical density in g/cc
-    element_theory_density = molecular_mass/unit_cell_volume/0.6022 # in g/cc
+    material_theory_density = molecular_mass/unit_cell_volume/0.6022 # in g/cc
     
-    # Return `element_scatter_depth`, `element_absorb_depth`, `element_total_depth`, `element_scatter_thick`, `element_theory_density`
-    return element_scatter_depth, element_absorb_depth, element_total_depth, element_scatter_thick, element_theory_density
+    # Return `material_scatter_depth`, `material_absorb_depth`, `material_total_depth`, `material_scatter_thick`, `material_theory_density`
+    return material_scatter_depth, material_absorb_depth, material_total_depth, material_scatter_thick, material_theory_density
 
 # Define integrand_cyl() function
 def integrand_cyl(x, paramwave):
@@ -560,25 +560,25 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
             id = row['id']
             can_material = row['material']
             can_total_thickness = row['can_total_thick_mm']/10  # in cm
-            can_volume = row['can_volume_mm3']/1000  # in cm^3
+            can_volume = row['can_material_volume_mm3']/1000  # in cm^3
 
-            element_row = material[material['material'] == can_material].iloc[0]
+            material_row = material[material['material'] == can_material].iloc[0]
             
             # Set absorption cross-section in bn/fu
-            absorb_xs = element_row['absorb_xs']*np.sqrt(25/neutron_energy) # in bn/fu
+            material_absorb_xs = material_row['absorb_xs']*np.sqrt(25/neutron_energy) # in bn/fu
             # Set total scattering cross-section in bn/fu
-            scatter_xs = element_row['scatter_xs'] # in bn/fu
+            material_scatter_xs = material_row['scatter_xs'] # in bn/fu
             # Set relative molecular mass
-            molecular_mass = element_row['molecular_mass']
+            material_molecular_mass = material_row['molecular_mass']
             # Set unit cell volume
-            unit_cell_volume = element_row['unit_cell_volume']
+            material_unit_cell_volume = material_row['unit_cell_volume']
 
-            element_scatter_depth, element_absorb_depth, element_total_depth, element_scatter_thick, element_theory_density = element_properties(absorb_xs, scatter_xs, molecular_mass, unit_cell_volume)
+            material_scatter_depth, material_absorb_depth, material_total_depth, material_scatter_thick, material_theory_density = material_properties(material_absorb_xs, material_scatter_xs, material_molecular_mass, material_unit_cell_volume)
             
             # Find percent of incident beam that is scattered (assume no absorption)
             # Find percent of incident beam that is absorbed (assume no scattering)
             # Find can mass in grams
-            can_percent_scatter_flat, can_percent_absorb_flat, can_mass_flat = calculate_flatPlate(can_total_thickness = can_total_thickness, can_volume = can_volume, scatter_depth = element_scatter_depth, absorb_depth = element_absorb_depth, theory_density = element_theory_density)
+            can_percent_scatter_flat, can_percent_absorb_flat, can_mass_flat = calculate_flatPlate(can_total_thickness = can_total_thickness, can_volume = can_volume, scatter_depth = material_scatter_depth, absorb_depth = material_absorb_depth, theory_density = material_theory_density)
 
             # Populate dictionaries with `id` as key
             can_percent_scatter[id] = can_percent_scatter_flat
@@ -595,27 +595,28 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
             can_inner_radius = row['can_inner_radius_mm']/10 # in cm
             can_outer_radius = row['can_outer_radius_mm']/10 # in cm
             sample_height = row['sample_height_mm']/10 # in cm
+            can_volume = row['can_material_volume_mm3']/1000  # in cm^3
 
-            element_row = material[material['material'] == can_material].iloc[0]
+            material_row = material[material['material'] == can_material].iloc[0]
             
             # Set absorption cross-section in bn/fu
-            absorb_xs = element_row['absorb_xs']*np.sqrt(25/neutron_energy) # in bn/fu
+            material_absorb_xs = material_row['absorb_xs']*np.sqrt(25/neutron_energy) # in bn/fu
             # Set total scattering cross-section in bn/fu
-            scatter_xs = element_row['scatter_xs'] # in bn/fu
+            material_scatter_xs = material_row['scatter_xs'] # in bn/fu
             # Set relative molecular mass
-            molecular_mass = element_row['molecular_mass']
+            material_molecular_mass = material_row['molecular_mass']
             # Set unit cell volume
-            unit_cell_volume = element_row['unit_cell_volume']
+            material_unit_cell_volume = material_row['unit_cell_volume']
             
             # Find volume of can itself
-            can_volume = sample_height*np.pi*(can_inner_radius**2-can_outer_radius**2) # in cm^3
+            # can_volume = sample_height*np.pi*(can_inner_radius**2-can_outer_radius**2) # in cm^3
 
-            element_scatter_depth, element_absorb_depth, element_total_depth, element_scatter_thick, element_theory_density = element_properties(absorb_xs, scatter_xs, molecular_mass, unit_cell_volume)
+            material_scatter_depth, material_absorb_depth, material_total_depth, material_scatter_thick, material_theory_density = material_properties(material_absorb_xs, material_scatter_xs, material_molecular_mass, material_unit_cell_volume)
             
             # Find percent of incident beam that is scattered (assume no absorption)
             # Find percent of incident beam that is absorbed (assume no scattering)
             # Find can mass in grams
-            can_percent_scatter_cyl, can_percent_absorb_cyl, can_mass_cyl = can_annulus(scatter_xs = scatter_xs, absorb_xs = absorb_xs, theory_density = element_theory_density, unit_cell_volume = unit_cell_volume, height = sample_height, inner_radius = can_inner_radius, outer_radius = can_outer_radius, volume = can_volume)
+            can_percent_scatter_cyl, can_percent_absorb_cyl, can_mass_cyl = can_annulus(scatter_xs = material_scatter_xs, absorb_xs = material_absorb_xs, theory_density = material_theory_density, unit_cell_volume = material_unit_cell_volume, height = sample_height, inner_radius = can_inner_radius, outer_radius = can_outer_radius, volume = can_volume)
 
             # Populate dictionaries with `id` as key
             can_percent_scatter[id] = can_percent_scatter_cyl
@@ -638,9 +639,11 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
             # Find volume of can itself
             can_volume_inner = H*np.pi*(R2**2 - R1**2) # in cm^3
             can_volume_outer = H*np.pi*(R4**2 - R3**2) # in cm^3
-            total_volume = can_volume_inner + can_volume_outer # in cm^3
-            
+            # total_volume = can_volume_inner + can_volume_outer # in cm^3
+            total_volume = row['can_material_volume_mm3']/1000  # in cm^3
+
             # Find new outer radius
+            # extra thickness
             t = np.sqrt(R2**2 - R1**2 + R4**2) - R4 # in cm
             new_R4 = R4 + t # in cm
 
@@ -648,23 +651,23 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
             new_can_volume_outer = H*np.pi*(new_R4**2 - R3**2) # in cm^3
             new_total_volume = can_volume_inner + new_can_volume_outer # in cm^3
 
-            element_row = material[material['material'] == can_material].iloc[0]
+            material_row = material[material['material'] == can_material].iloc[0]
             
             # Set absorption cross-section in bn/fu
-            absorb_xs = element_row['absorb_xs']*np.sqrt(25/neutron_energy) # in bn/fu
+            material_absorb_xs = material_row['absorb_xs']*np.sqrt(25/neutron_energy) # in bn/fu
             # Set total scattering cross-section in bn/fu
-            scatter_xs = element_row['scatter_xs'] # in bn/fu
+            material_scatter_xs = material_row['scatter_xs'] # in bn/fu
             # Set relative molecular mass
-            molecular_mass = element_row['molecular_mass']
+            material_molecular_mass = material_row['molecular_mass']
             # Set unit cell volume
-            unit_cell_volume = element_row['unit_cell_volume']
+            material_unit_cell_volume = material_row['unit_cell_volume']
 
-            element_scatter_depth, element_absorb_depth, element_total_depth, element_scatter_thick, element_theory_density = element_properties(absorb_xs, scatter_xs, molecular_mass, unit_cell_volume)
+            material_scatter_depth, material_absorb_depth, material_total_depth, material_scatter_thick, material_theory_density = material_properties(material_absorb_xs, material_scatter_xs, material_molecular_mass, material_unit_cell_volume)
             
             # Find percent of incident beam that is scattered (assume no absorption)
             # Find percent of incident beam that is absorbed (assume no scattering)
             # Find can mass in grams
-            can_percent_scatter_ann, can_percent_absorb_ann, can_mass_ann = can_annulus(scatter_xs = scatter_xs, absorb_xs = absorb_xs, theory_density = element_theory_density, unit_cell_volume = unit_cell_volume, height = H, inner_radius = R3, outer_radius = new_R4, volume = new_total_volume)
+            can_percent_scatter_ann, can_percent_absorb_ann, can_mass_ann = can_annulus(scatter_xs = material_scatter_xs, absorb_xs = material_absorb_xs, theory_density = material_theory_density, unit_cell_volume = material_unit_cell_volume, height = H, inner_radius = R3, outer_radius = new_R4, volume = new_total_volume)
             
             # Populate dictionaries with `id` as key
             can_percent_scatter[id] = can_percent_scatter_ann
