@@ -10,6 +10,8 @@ from mantid.simpleapi import CreateSampleWorkspace, SetSample
 from mantid.kernel import Material
 from scipy.integrate import quad
 from scipy.integrate import trapezoid
+import datetime
+import csv
 
 # Obtain current working directory filepath
 this_dir = os.getcwd()
@@ -295,7 +297,11 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
     # Define pattern for validate_formula() function
     # Each element is followed by number of atoms for that element, specified without a hyphen; each element is separated from other elements using a hyphen
     # For isotopes, isotope must be enclosed by parenthesis; e.g., (Li7)
-    mantid_format = r'^(\([A-Za-z][a-z]*\d*\)\d*|[A-Za-z][a-z]*\d*)(-[A-Za-z][a-z]*\d*|\([A-Za-z][a-z]*\d*\)\d*)*$'
+    # [A-Za-z][a-z]* matches a capital letter (e.g., C, O, B, P, F) or a capital letter followed by lowercase letters (e.g., Cu, Si, Al)
+    # \d*(\.\d+)? matches any digit (0-9), possibly with a decimal
+    # \([A-Za-z][a-z]?\d*(\.\d+)?\)\d*(\.\d+)? matches an isotope
+    mantid_format = r'^([A-Za-z][a-z]?\d*(\.\d+)?|\([A-Za-z][a-z]?\d*(\.\d+)?\)\d*(\.\d+)?)(-([A-Za-z][a-z]?\d*(\.\d+)?|\([A-Za-z][a-z]?\d*(\.\d+)?\)\d*(\.\d+)?))*$'
+    # mantid_format = r'^(\([A-Za-z][a-z]*\d*\)\d*|[A-Za-z][a-z]*\d*)(-[A-Za-z][a-z]*\d*|\([A-Za-z][a-z]*\d*\)\d*)*$'
 
     # Define valid file extension
     file_extension = '.cif'
@@ -565,7 +571,7 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
             material_row = material[material['material'] == can_material].iloc[0]
             
             # Set absorption cross-section in bn/fu
-            material_absorb_xs = material_row['absorb_xs']*np.sqrt(25/neutron_energy) # in bn/fu
+            material_absorb_xs = material_row['absorb_xs']*np.sqrt(25/neutron_energy)*material_row['Z_param'] # in bn/fu
             # Set total scattering cross-section in bn/fu
             material_scatter_xs = material_row['scatter_xs'] # in bn/fu
             # Set relative molecular mass
@@ -600,7 +606,7 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
             material_row = material[material['material'] == can_material].iloc[0]
             
             # Set absorption cross-section in bn/fu
-            material_absorb_xs = material_row['absorb_xs']*np.sqrt(25/neutron_energy) # in bn/fu
+            material_absorb_xs = material_row['absorb_xs']*np.sqrt(25/neutron_energy)*material_row['Z_param'] # in bn/fu
             # Set total scattering cross-section in bn/fu
             material_scatter_xs = material_row['scatter_xs'] # in bn/fu
             # Set relative molecular mass
@@ -654,7 +660,7 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
             material_row = material[material['material'] == can_material].iloc[0]
             
             # Set absorption cross-section in bn/fu
-            material_absorb_xs = material_row['absorb_xs']*np.sqrt(25/neutron_energy) # in bn/fu
+            material_absorb_xs = material_row['absorb_xs']*np.sqrt(25/neutron_energy)*material_row['Z_param'] # in bn/fu
             # Set total scattering cross-section in bn/fu
             material_scatter_xs = material_row['scatter_xs'] # in bn/fu
             # Set relative molecular mass
@@ -680,7 +686,6 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
         'sample_mass_g': pd.DataFrame(sample_mass.items(), columns = ['id', 'sample_mass_g']),
         'can_volume_cm3': pd.DataFrame(can_volume_dict.items(), columns = ['id', 'can_volume_cm3']),
         'sample_moles': pd.DataFrame(sample_moles.items(), columns = ['id', 'sample_moles']),
-        'sample_thick_cm': pd.DataFrame(sample_thick.items(), columns = ['id', 'sample_thick_cm']),
         'percent_scatter': pd.DataFrame(percent_scatter.items(), columns = ['id', 'percent_scatter']),
         'percent_absorb': pd.DataFrame(percent_absorb.items(), columns = ['id', 'percent_absorb']),
         'can_percent_scatter': pd.DataFrame(can_percent_scatter.items(), columns = ['id', 'can_percent_scatter']),
@@ -701,22 +706,28 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
     
     # Define conditions and corresponding flags
     conditions = [
-        (df_concat['percent_scatter'] > 10) | (df_concat['percent_absorb'] > 10),
-        df_concat['can_percent_absorb'] > df_concat['percent_absorb'],
+        df_concat['percent_scatter'] > 10,
+        df_concat['percent_absorb'] > 10,
+        (df_concat['percent_absorb'] + df_concat['percent_scatter'] > 10),
         df_concat['can_percent_scatter'] > df_concat['percent_scatter']
     ]
 
     # Define flags
-    flags = ['*', '**', '***']
+    flags = ['(*)', '(**)', '(***)', '(***)']
 
-    # Use np.select() to create new column
-    df_concat['Flag'] = np.select(conditions, flags, default = np.nan)
+    # Create an empty column for the concatenated flags
+    df_concat['flag'] = ''
+
+    for condition, flag in zip(conditions, flags):
+        df_concat['flag'] = np.where(condition, df_concat['flag'] + flag, df_concat['flag'])
+
+    # Replace empty strings with NaN if no conditions are true
+    df_concat['flag'] = df_concat['flag'].replace('', np.nan)
 
     # Drop `drawing_number` column
     df_concat.drop('drawing_number', axis = 1, inplace = True)
 
-    # Print sample information
-    print(f'''
+    sample_txt= f'''
     =============================
         Sample Information
     =============================
@@ -731,23 +742,40 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
     Packing fraction: {pack_fraction}
     Incident neutron energy:   {neutron_energy} meV
     ============================
-    ''')
+    '''
 
-    # Print sample can independent information
-    print(f'''
+    sample_can_txt = f'''
     =========================================
         Sample Can Independent Values
     =========================================
     Calculated unit cell volume (Å^3): {round(unit_cell_volume, 3)}
-    Molecular mass (g/mol/fu): {round(molecular_mass, 3)}
+    Molecular mass (g/mol/fu): {round(molecular_mass/float(Z_param), 3)}
+    Molecular mass per unit cell (g/mol/unit cell): {round(molecular_mass, 3)}
     Scattering cross section (bn/fu): {round(scatter_xs, 3)}
     Absorption cross section (bn/fu): {round(absorb_xs, 3)}
     Scattering penetration depth (cm): {round(scatter_depth, 3)}
     Absorption penetration depth (cm): {round(absorb_depth, 3)}
     Total peneteration depth (cm):  {round(total_depth, 3)}
-    Calculated sample density (g/cc): {round(theory_density, 3)}
+    Theoretical sample density (g/cc): {round(theory_density, 3)}
     ==========================================
-    ''')
+    '''
 
-    print(df_concat)
+    # Get date and time
+    current_date = datetime.datetime.now().strftime('%d-%m-%y-%H-%M-%S')
+    
+    # Create filenames
+    txt_filename = f'{mantid_formula}_{current_date}.txt'
+    csv_filename = f'{mantid_formula}_{current_date}.csv'
+
+    # Write sample information to a text file
+    try:
+        with open(txt_filename, 'w', encoding = 'utf-8') as txt_file:
+            txt_file.write(sample_txt)
+            txt_file.write(sample_can_txt)
+    except Exception as e:
+        print(f'An error occurred while writing to text file: {e}')
+
+    df_concat.to_csv(csv_filename)
+
+    # print(df_concat)
     # df_concat.style
