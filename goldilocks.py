@@ -16,7 +16,6 @@ import csv
 # Obtain current working directory filepath
 this_dir = os.getcwd()
 
-# Read attributes for sample powder cans
 flat_plate = pd.read_csv(os.path.join(this_dir, 'src', 'dict', 'flatPlate.csv'))
 cylindrical = pd.read_csv(os.path.join(this_dir, 'src', 'dict', 'cylindrical.csv'))
 annulus = pd.read_csv(os.path.join(this_dir, 'src', 'dict', 'annulus.csv'))
@@ -25,7 +24,7 @@ material = pd.read_csv(os.path.join(this_dir, 'src', 'dict', 'material.csv'))
 
 # Define remove_parentheses() function
 def remove_parentheses(i):
-    # Replace text within parentheses (including the parentheses) with empty string
+    # Replace text within parentheses (including parentheses) with empty string
     # \( matches an opening parenthesis
     # \) matches a closing parenthesis
     # [^)]* matches any character except a closing parenthesis
@@ -458,7 +457,7 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
         for index, row in annulus.iterrows():
             # Extract `id` and `can_volume_mm3` for each row
             id = row['id']
-            can_volume_ann = row['can_volume_mm3']/1000 # in cm^3
+            can_volume_ann = row['sample_volume_mm3']/1000 # in cm^3
 
             # Find sample mass in grams
             sample_mass_ann = can_volume_ann*theory_density*pack_fraction # in grams
@@ -484,7 +483,6 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
     total_depth = unit_cell_volume/((scatter_xs+absorb_xs)*pack_fraction)
 
     # Initialize empty dictionaries
-    sample_thick = {}
     percent_scatter = {}
     percent_absorb = {}
 
@@ -492,15 +490,11 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
     if 'flat' in can:
         # Iterate over each row in DataFrame
         for index, row in flat_plate.iterrows():
-            # Extract `id` and `can_area_mm2` for each row
+            # Extract `id` for each row
             id = row['id']
-            sample_area = row['can_area_mm2']
 
             # Find thickness of sample spread homogenously over sample can
             sample_thick_flat = row['sample_thick_mm']/10 # in cm
-
-            # Extract sample mass from dictionary
-            # sample_mass_i = sample_mass.get(id)
 
             # Find percent of incident beam that is scattered (assume no absorption)
             percent_scatter_flat = 100 * (1-(np.exp(-(sample_thick_flat/scatter_depth))))
@@ -509,7 +503,6 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
             percent_absorb_flat =  100 * (1-(np.exp(-(sample_thick_flat/absorb_depth))))
             
             # Populate dictionaries with `id` as key
-            sample_thick[id] = sample_thick_flat
             percent_scatter[id] = percent_scatter_flat
             percent_absorb[id] = percent_absorb_flat
 
@@ -566,20 +559,20 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
             id = row['id']
             can_material = row['material']
             can_total_thickness = row['can_total_thick_mm']/10  # in cm
-            can_volume = row['can_material_volume_mm3']/1000  # in cm^3
+            can_volume = row['can_material_volume_cm3']
 
             material_row = material[material['material'] == can_material].iloc[0]
             
             # Set absorption cross-section in bn/fu
             material_absorb_xs = material_row['absorb_xs']*np.sqrt(25/neutron_energy)*material_row['Z_param'] # in bn/fu
             # Set total scattering cross-section in bn/fu
-            material_scatter_xs = material_row['scatter_xs'] # in bn/fu
+            material_scatter_xs = material_row['scatter_xs']*material_row['Z_param'] # in bn/fu
             # Set relative molecular mass
             material_molecular_mass = material_row['molecular_mass']
             # Set unit cell volume
             material_unit_cell_volume = material_row['unit_cell_volume']
 
-            material_scatter_depth, material_absorb_depth, material_total_depth, material_scatter_thick, material_theory_density = material_properties(material_absorb_xs, material_scatter_xs, material_molecular_mass, material_unit_cell_volume)
+            material_scatter_depth, material_absorb_depth, _, _, material_theory_density = material_properties(material_absorb_xs, material_scatter_xs, material_molecular_mass, material_unit_cell_volume)
             
             # Find percent of incident beam that is scattered (assume no absorption)
             # Find percent of incident beam that is absorbed (assume no scattering)
@@ -601,28 +594,25 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
             can_inner_radius = row['can_inner_radius_mm']/10 # in cm
             can_outer_radius = row['can_outer_radius_mm']/10 # in cm
             sample_height = row['sample_height_mm']/10 # in cm
-            can_volume = row['can_material_volume_mm3']/1000  # in cm^3
+            can_material_volume = row['can_material_volume_cm3']
 
             material_row = material[material['material'] == can_material].iloc[0]
             
             # Set absorption cross-section in bn/fu
             material_absorb_xs = material_row['absorb_xs']*np.sqrt(25/neutron_energy)*material_row['Z_param'] # in bn/fu
             # Set total scattering cross-section in bn/fu
-            material_scatter_xs = material_row['scatter_xs'] # in bn/fu
+            material_scatter_xs = material_row['scatter_xs']*material_row['Z_param'] # in bn/fu
             # Set relative molecular mass
             material_molecular_mass = material_row['molecular_mass']
             # Set unit cell volume
             material_unit_cell_volume = material_row['unit_cell_volume']
             
-            # Find volume of can itself
-            # can_volume = sample_height*np.pi*(can_inner_radius**2-can_outer_radius**2) # in cm^3
-
-            material_scatter_depth, material_absorb_depth, material_total_depth, material_scatter_thick, material_theory_density = material_properties(material_absorb_xs, material_scatter_xs, material_molecular_mass, material_unit_cell_volume)
+            material_scatter_depth, material_absorb_depth, _, _, material_theory_density = material_properties(material_absorb_xs, material_scatter_xs, material_molecular_mass, material_unit_cell_volume)
             
             # Find percent of incident beam that is scattered (assume no absorption)
             # Find percent of incident beam that is absorbed (assume no scattering)
             # Find can mass in grams
-            can_percent_scatter_cyl, can_percent_absorb_cyl, can_mass_cyl = can_annulus(scatter_xs = material_scatter_xs, absorb_xs = material_absorb_xs, theory_density = material_theory_density, unit_cell_volume = material_unit_cell_volume, height = sample_height, inner_radius = can_inner_radius, outer_radius = can_outer_radius, volume = can_volume)
+            can_percent_scatter_cyl, can_percent_absorb_cyl, can_mass_cyl = can_annulus(scatter_xs = material_scatter_xs, absorb_xs = material_absorb_xs, theory_density = material_theory_density, unit_cell_volume = material_unit_cell_volume, height = sample_height, inner_radius = can_inner_radius, outer_radius = can_outer_radius, volume = can_material_volume)
 
             # Populate dictionaries with `id` as key
             can_percent_scatter[id] = can_percent_scatter_cyl
@@ -636,44 +626,28 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
             # Extract `id`, `material`, `insert_inner_radius_mm`, `insert_outer_radius_mm`, `can_inner_radius_mm`, `can_outer_radius_mm`, and `sample_height_mm` for each row
             id = row['id']
             can_material = row['material']
-            R1 = row['insert_inner_radius_mm']/10 # in cm
-            R2 = row['insert_outer_radius_mm']/10 # in cm
-            R3 = row['can_inner_radius_mm']/10 # in cm
-            R4 = row['can_outer_radius_mm']/10 # in cm
-            H = row['sample_height_mm']/10 # in cm
-
-            # Find volume of can itself
-            can_volume_inner = H*np.pi*(R2**2 - R1**2) # in cm^3
-            can_volume_outer = H*np.pi*(R4**2 - R3**2) # in cm^3
-            # total_volume = can_volume_inner + can_volume_outer # in cm^3
-            total_volume = row['can_material_volume_mm3']/1000  # in cm^3
-
-            # Find new outer radius
-            # extra thickness
-            t = np.sqrt(R2**2 - R1**2 + R4**2) - R4 # in cm
-            new_R4 = R4 + t # in cm
-
-            # Find volume of can itself
-            new_can_volume_outer = H*np.pi*(new_R4**2 - R3**2) # in cm^3
-            new_total_volume = can_volume_inner + new_can_volume_outer # in cm^3
+            can_R3_cm = row['can_R3_cm']
+            new_can_R4_cm = row['new_can_R4_cm']
+            can_height_cm = row['can_height_cm']
+            can_material_volume_cm3 = row['new_can_material_total_volume_cm3']
 
             material_row = material[material['material'] == can_material].iloc[0]
             
             # Set absorption cross-section in bn/fu
             material_absorb_xs = material_row['absorb_xs']*np.sqrt(25/neutron_energy)*material_row['Z_param'] # in bn/fu
             # Set total scattering cross-section in bn/fu
-            material_scatter_xs = material_row['scatter_xs'] # in bn/fu
+            material_scatter_xs = material_row['scatter_xs']*material_row['Z_param'] # in bn/fu
             # Set relative molecular mass
             material_molecular_mass = material_row['molecular_mass']
             # Set unit cell volume
             material_unit_cell_volume = material_row['unit_cell_volume']
 
-            material_scatter_depth, material_absorb_depth, material_total_depth, material_scatter_thick, material_theory_density = material_properties(material_absorb_xs, material_scatter_xs, material_molecular_mass, material_unit_cell_volume)
+            material_scatter_depth, material_absorb_depth, _, _, material_theory_density = material_properties(material_absorb_xs, material_scatter_xs, material_molecular_mass, material_unit_cell_volume)
             
             # Find percent of incident beam that is scattered (assume no absorption)
             # Find percent of incident beam that is absorbed (assume no scattering)
             # Find can mass in grams
-            can_percent_scatter_ann, can_percent_absorb_ann, can_mass_ann = can_annulus(scatter_xs = material_scatter_xs, absorb_xs = material_absorb_xs, theory_density = material_theory_density, unit_cell_volume = material_unit_cell_volume, height = H, inner_radius = R3, outer_radius = new_R4, volume = new_total_volume)
+            can_percent_scatter_ann, can_percent_absorb_ann, can_mass_ann = can_annulus(scatter_xs = material_scatter_xs, absorb_xs = material_absorb_xs, theory_density = material_theory_density, unit_cell_volume = material_unit_cell_volume, height = can_height_cm, inner_radius = can_R3_cm, outer_radius = new_can_R4_cm, volume = can_material_volume_cm3)
             
             # Populate dictionaries with `id` as key
             can_percent_scatter[id] = can_percent_scatter_ann
@@ -715,7 +689,7 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
     # Define flags
     flags = ['(*)', '(**)', '(***)', '(***)']
 
-    # Create an empty column for the concatenated flags
+    # Create an empty column for concatenated flags
     df_concat['flag'] = ''
 
     for condition, flag in zip(conditions, flags):
@@ -760,7 +734,7 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
     ==========================================
     '''
 
-    # Get date and time
+    # Obtain date and time
     current_date = datetime.datetime.now().strftime('%d-%m-%y-%H-%M-%S')
     
     # Create filenames
@@ -775,7 +749,6 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
     except Exception as e:
         print(f'An error occurred while writing to text file: {e}')
 
-    df_concat.to_csv(csv_filename)
-
-    # print(df_concat)
-    # df_concat.style
+    # Write `output_df` as csv to /`csv_filename`.csv
+    output_df = df_concat.dropna(subset = ['sample_mass_g'])
+    output_df.to_csv(csv_filename, index = False)
