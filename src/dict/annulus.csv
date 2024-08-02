@@ -1,4 +1,4 @@
-id,material,sample_height_mm,sample_inner_radius_mm,sample_outer_radius_mm,sample_thick_mm,can_volume_mm3,can_inner_radius_mm,can_outer_radius_mm,can_thick_mm,insert_inner_radius_mm,insert_outer_radius_mm,insert_thick_mm,can_material_volume_mm3,can_material_mass_g
-annulus_61p722mm_6p6802mm_Al,Al,61.722,6.9342,7.9375,1.0033,2893.218885,7.9375,8.3185,0.381,6.6802,6.9342,0.254,1.871,5.053
-annulus_61p722mm_5p6769mm_Al,Al,61.722,5.9309,7.9375,2.0066,5396.063232,7.9375,8.3185,0.381,5.6769,5.9309,0.254,1.773,4.786
-annulus_5mm_3p81mm_V,V,5,50,,,1460.744175,5,5.1524,0.1524,3.81,3.9624,0.1524,0.429,2.618
+id,material,sample_height_mm,sample_inner_radius_mm,sample_outer_radius_mm,sample_thick_mm,sample_volume_mm3,can_inner_radius_mm,can_outer_radius_mm,can_thick_mm,insert_inner_radius_mm,insert_outer_radius_mm,insert_thick_mm,can_R1_cm,can_R2_cm,can_R3_cm,can_R4_cm,can_height_cm,can_material_volume_cm3,can_material_volume_inner_cm3,can_material_volume_outer_cm3,d,new_can_R4_cm,new_can_material_volume_outer_cm3,new_can_material_total_volume_cm3
+annulus_61p722mm_6p6802mm_Al,Al,61.722,6.9342,7.9375,1.0033,2893.218885,7.9375,8.3185,0.381,6.6802,6.9342,0.254,0.66802,0.69342,0.79375,0.83185,6.1722,1.871,0.6705359791,0.3640510823,0.1364981423,0.9683481423,5.965674789,6.636210768
+annulus_61p722mm_5p6769mm_Al,Al,61.722,5.9309,7.9375,2.0066,5396.063232,7.9375,8.3185,0.381,5.6769,5.9309,0.254,0.56769,0.59309,0.79375,0.83185,6.1722,1.773,0.5717069822,0.3449826664,0.1985270712,1.030377071,8.369690139,8.941397121
+annulus_5mm_3p81mm_V,V,5,50,,,1460.744175,5,5.1524,0.1524,3.81,3.9624,0.1524,0.381,0.39624,0.5,0.51524,0.5,0.429,0.01860629863,0.02085263072,0.1058747359,0.6211147359,0.2132882469,0.2318945455
