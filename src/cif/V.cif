@@ -39,7 +39,7 @@ _cell_angle_alpha 90.
 _cell_angle_beta 90.
 _cell_angle_gamma 90.
 _cell_volume 27.82
-_cell_formula_units_Z 1
+_cell_formula_units_Z 2
 _space_group_name_H-M_alt 'I m -3 m'
 _space_group_IT_number 229
 loop_
