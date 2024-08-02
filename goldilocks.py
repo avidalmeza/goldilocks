@@ -130,7 +130,7 @@ def integral_ann(xs, unit_cell_volume, pack_fraction, R1, R2):
     return result            
 
 # Define calculate_flatPlate() function
-def calculate_flatPlate(can_total_thickness, can_area, scatter_depth, absorb_depth, theory_density):
+def calculate_flatPlate(can_total_thickness, can_volume, scatter_depth, absorb_depth, theory_density):
     # Find percent of incident beam that is scattered (assume no absorption)
     can_percent_scatter = 100 * (1-(np.exp(-(can_total_thickness/scatter_depth))))
 
@@ -669,6 +669,7 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
         'can_percent_scatter': pd.DataFrame(can_percent_scatter.items(), columns = ['id', 'can_percent_scatter']),
         'can_percent_absorb': pd.DataFrame(can_percent_absorb.items(), columns = ['id', 'can_percent_absorb']),
         'can_mass_g': pd.DataFrame(can_mass.items(), columns = ['id', 'can_mass_g']),
+        'can_theory_density': pd.DataFrame(can_theory_density.items(), columns = ['id', 'can_theory_density'])
     }
 
     # Extract first DataFrame from dictionary
