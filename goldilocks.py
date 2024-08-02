@@ -56,7 +56,7 @@ def uc_volume(a, b, c, alpha, gamma, beta):
     return unit_cell_volume
 
 # Define material_properties() function
-def material_properties(absorb_xs, scatter_xs, molecular_mass, unit_cell_volume):
+def material_properties(absorb_xs, scatter_xs, molecular_mass, unit_cell_volume, Z_param):
     # Find penetration depth due to scattering in cm
     material_scatter_depth = unit_cell_volume/scatter_xs # in cm
     
@@ -70,7 +70,7 @@ def material_properties(absorb_xs, scatter_xs, molecular_mass, unit_cell_volume)
     material_scatter_thick = np.log(0.9)*material_scatter_depth # in cm
     
     # Find theoretical density in g/cc
-    material_theory_density = molecular_mass/unit_cell_volume/0.6022 # in g/cc
+    material_theory_density = (molecular_mass/unit_cell_volume/0.6022)*Z_param # in g/cc
     
     # Return `material_scatter_depth`, `material_absorb_depth`, `material_total_depth`, `material_scatter_thick`, `material_theory_density`
     return material_scatter_depth, material_absorb_depth, material_total_depth, material_scatter_thick, material_theory_density
@@ -130,7 +130,7 @@ def integral_ann(xs, unit_cell_volume, pack_fraction, R1, R2):
     return result            
 
 # Define calculate_flatPlate() function
-def calculate_flatPlate(can_total_thickness, can_volume, scatter_depth, absorb_depth, theory_density):
+def calculate_flatPlate(can_total_thickness, can_area, scatter_depth, absorb_depth, theory_density):
     # Find percent of incident beam that is scattered (assume no absorption)
     can_percent_scatter = 100 * (1-(np.exp(-(can_total_thickness/scatter_depth))))
 
@@ -547,6 +547,7 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
     Find scattering and absorption for sample can
     """
     # Initialize empty dictionaries
+    can_theory_density = {}
     can_percent_scatter = {}
     can_percent_absorb = {}
     can_mass = {}
@@ -572,7 +573,7 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
             # Set unit cell volume
             material_unit_cell_volume = material_row['unit_cell_volume']
 
-            material_scatter_depth, material_absorb_depth, _, _, material_theory_density = material_properties(material_absorb_xs, material_scatter_xs, material_molecular_mass, material_unit_cell_volume)
+            material_scatter_depth, material_absorb_depth, _, _, material_theory_density = material_properties(material_absorb_xs, material_scatter_xs, material_molecular_mass, material_unit_cell_volume, material_row['Z_param'])
             
             # Find percent of incident beam that is scattered (assume no absorption)
             # Find percent of incident beam that is absorbed (assume no scattering)
@@ -580,6 +581,7 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
             can_percent_scatter_flat, can_percent_absorb_flat, can_mass_flat = calculate_flatPlate(can_total_thickness = can_total_thickness, can_volume = can_volume, scatter_depth = material_scatter_depth, absorb_depth = material_absorb_depth, theory_density = material_theory_density)
 
             # Populate dictionaries with `id` as key
+            can_theory_density[id] = material_theory_density
             can_percent_scatter[id] = can_percent_scatter_flat
             can_percent_absorb[id] = can_percent_absorb_flat
             can_mass[id] = can_mass_flat
@@ -607,7 +609,7 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
             # Set unit cell volume
             material_unit_cell_volume = material_row['unit_cell_volume']
             
-            material_scatter_depth, material_absorb_depth, _, _, material_theory_density = material_properties(material_absorb_xs, material_scatter_xs, material_molecular_mass, material_unit_cell_volume)
+            material_scatter_depth, material_absorb_depth, _, _, material_theory_density = material_properties(material_absorb_xs, material_scatter_xs, material_molecular_mass, material_unit_cell_volume, material_row['Z_param'])
             
             # Find percent of incident beam that is scattered (assume no absorption)
             # Find percent of incident beam that is absorbed (assume no scattering)
@@ -615,6 +617,7 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
             can_percent_scatter_cyl, can_percent_absorb_cyl, can_mass_cyl = can_annulus(scatter_xs = material_scatter_xs, absorb_xs = material_absorb_xs, theory_density = material_theory_density, unit_cell_volume = material_unit_cell_volume, height = sample_height, inner_radius = can_inner_radius, outer_radius = can_outer_radius, volume = can_material_volume)
 
             # Populate dictionaries with `id` as key
+            can_theory_density[id] = material_theory_density
             can_percent_scatter[id] = can_percent_scatter_cyl
             can_percent_absorb[id] = can_percent_absorb_cyl
             can_mass[id] = can_mass_cyl
@@ -642,7 +645,7 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
             # Set unit cell volume
             material_unit_cell_volume = material_row['unit_cell_volume']
 
-            material_scatter_depth, material_absorb_depth, _, _, material_theory_density = material_properties(material_absorb_xs, material_scatter_xs, material_molecular_mass, material_unit_cell_volume)
+            material_scatter_depth, material_absorb_depth, _, _, material_theory_density = material_properties(material_absorb_xs, material_scatter_xs, material_molecular_mass, material_unit_cell_volume, material_row['Z_param'])
             
             # Find percent of incident beam that is scattered (assume no absorption)
             # Find percent of incident beam that is absorbed (assume no scattering)
@@ -650,6 +653,7 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
             can_percent_scatter_ann, can_percent_absorb_ann, can_mass_ann = can_annulus(scatter_xs = material_scatter_xs, absorb_xs = material_absorb_xs, theory_density = material_theory_density, unit_cell_volume = material_unit_cell_volume, height = can_height_cm, inner_radius = can_R3_cm, outer_radius = new_can_R4_cm, volume = can_material_volume_cm3)
             
             # Populate dictionaries with `id` as key
+            can_theory_density[id] = material_theory_density
             can_percent_scatter[id] = can_percent_scatter_ann
             can_percent_absorb[id] = can_percent_absorb_ann
             can_mass[id] = can_mass_ann
