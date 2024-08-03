@@ -38,15 +38,15 @@ def validate_formula(format, formula):
     # Return `True` if formula (string) matches format (pattern), `False` otherwise
     return True
 
-# Define sum_total_n() function
-def sum_total_n(i):
-    # Define regular expression to find all digits in string
-    digits = re.findall(r'\d', i)
+# Define sum_total_n() function, used for molecular formula case
+def sum_total_n(s):
+    # Ignore isotopes
+    # Remove substrings within parentheses and extract remaining numeric values
+    s = re.sub(r'\(.*?\)', '', s)
+    numbers = re.findall(r'\d+\.?\d*', s)
 
-    # Convert digit to integer and sum all digits
-    total_sum = sum(int(j) for j in digits)
-    
-    # Return total sum
+    # Convert each number found to a float and sum
+    total_sum = sum(float(num) for num in numbers)
     return total_sum
 
 # Define uc_volume() function
@@ -547,7 +547,6 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
     Find scattering and absorption for sample can
     """
     # Initialize empty dictionaries
-    can_theory_density = {}
     can_percent_scatter = {}
     can_percent_absorb = {}
     can_mass = {}
@@ -581,7 +580,6 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
             can_percent_scatter_flat, can_percent_absorb_flat, can_mass_flat = calculate_flatPlate(can_total_thickness = can_total_thickness, can_volume = can_volume, scatter_depth = material_scatter_depth, absorb_depth = material_absorb_depth, theory_density = material_theory_density)
 
             # Populate dictionaries with `id` as key
-            can_theory_density[id] = material_theory_density
             can_percent_scatter[id] = can_percent_scatter_flat
             can_percent_absorb[id] = can_percent_absorb_flat
             can_mass[id] = can_mass_flat
@@ -617,7 +615,6 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
             can_percent_scatter_cyl, can_percent_absorb_cyl, can_mass_cyl = can_annulus(scatter_xs = material_scatter_xs, absorb_xs = material_absorb_xs, theory_density = material_theory_density, unit_cell_volume = material_unit_cell_volume, height = sample_height, inner_radius = can_inner_radius, outer_radius = can_outer_radius, volume = can_material_volume)
 
             # Populate dictionaries with `id` as key
-            can_theory_density[id] = material_theory_density
             can_percent_scatter[id] = can_percent_scatter_cyl
             can_percent_absorb[id] = can_percent_absorb_cyl
             can_mass[id] = can_mass_cyl
@@ -653,7 +650,6 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
             can_percent_scatter_ann, can_percent_absorb_ann, can_mass_ann = can_annulus(scatter_xs = material_scatter_xs, absorb_xs = material_absorb_xs, theory_density = material_theory_density, unit_cell_volume = material_unit_cell_volume, height = can_height_cm, inner_radius = can_R3_cm, outer_radius = new_can_R4_cm, volume = can_material_volume_cm3)
             
             # Populate dictionaries with `id` as key
-            can_theory_density[id] = material_theory_density
             can_percent_scatter[id] = can_percent_scatter_ann
             can_percent_absorb[id] = can_percent_absorb_ann
             can_mass[id] = can_mass_ann
@@ -668,8 +664,7 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
         'percent_absorb': pd.DataFrame(percent_absorb.items(), columns = ['id', 'percent_absorb']),
         'can_percent_scatter': pd.DataFrame(can_percent_scatter.items(), columns = ['id', 'can_percent_scatter']),
         'can_percent_absorb': pd.DataFrame(can_percent_absorb.items(), columns = ['id', 'can_percent_absorb']),
-        'can_mass_g': pd.DataFrame(can_mass.items(), columns = ['id', 'can_mass_g']),
-        'can_theory_density': pd.DataFrame(can_theory_density.items(), columns = ['id', 'can_theory_density'])
+        'can_mass_g': pd.DataFrame(can_mass.items(), columns = ['id', 'can_mass_g'])
     }
 
     # Extract first DataFrame from dictionary
