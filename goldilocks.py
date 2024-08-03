@@ -40,8 +40,7 @@ def validate_formula(format, formula):
 
 # Define sum_total_n() function, used for molecular formula case
 def sum_total_n(s):
-    # Ignore isotopes
-    # Remove substrings within parentheses and extract remaining numeric values
+    # Remove substrings within parentheses (i.e., isotopes) and extract remaining numeric values
     s = re.sub(r'\(.*?\)', '', s)
     numbers = re.findall(r'\d+\.?\d*', s)
 
@@ -312,7 +311,7 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
     # Check if x is a filepath for a CIF
     try:
         if x.endswith(file_extension) and os.path.isfile(x):
-            # Extract mantid_formula, sample_n_density, total_n, a, b, c, alpha, beta, gamma with read_cif() function
+            # Gather mantid_formula, sample_n_density, total_n, a, b, c, alpha, beta, gamma from read_cif() function
             mantid_formula, sample_n_density, total_n, a, b, c, alpha, beta, gamma, Z_param = read_cif(x)
 
             # Define sample in workspace
@@ -572,6 +571,7 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
             # Set unit cell volume
             material_unit_cell_volume = material_row['unit_cell_volume']
 
+            # Gather `material_scatter_depth`, `material_absorb_depth`, `material_theory_density` from material_properties() function
             material_scatter_depth, material_absorb_depth, _, _, material_theory_density = material_properties(material_absorb_xs, material_scatter_xs, material_molecular_mass, material_unit_cell_volume, material_row['Z_param'])
             
             # Find percent of incident beam that is scattered (assume no absorption)
@@ -607,6 +607,7 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
             # Set unit cell volume
             material_unit_cell_volume = material_row['unit_cell_volume']
             
+            # Gather `material_scatter_depth`, `material_absorb_depth`, `material_theory_density` from material_properties() function
             material_scatter_depth, material_absorb_depth, _, _, material_theory_density = material_properties(material_absorb_xs, material_scatter_xs, material_molecular_mass, material_unit_cell_volume, material_row['Z_param'])
             
             # Find percent of incident beam that is scattered (assume no absorption)
@@ -623,7 +624,7 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
     if 'annulus' in can:
         # Iterate over each row in DataFrame
         for index, row in annulus.iterrows():
-            # Extract `id`, `material`, `insert_inner_radius_mm`, `insert_outer_radius_mm`, `can_inner_radius_mm`, `can_outer_radius_mm`, and `sample_height_mm` for each row
+            # Extract `id`, `material`, `can_R3_cm`, `new_can_R4_cm`, `can_height_cm`, and `new_can_material_total_volume_cm3` for each row
             id = row['id']
             can_material = row['material']
             can_R3_cm = row['can_R3_cm']
@@ -642,6 +643,7 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
             # Set unit cell volume
             material_unit_cell_volume = material_row['unit_cell_volume']
 
+            # Gather `material_scatter_depth`, `material_absorb_depth`, `material_theory_density` from material_properties() function
             material_scatter_depth, material_absorb_depth, _, _, material_theory_density = material_properties(material_absorb_xs, material_scatter_xs, material_molecular_mass, material_unit_cell_volume, material_row['Z_param'])
             
             # Find percent of incident beam that is scattered (assume no absorption)
@@ -678,18 +680,16 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
     # Merge with left join on `id` with `cans_desc` DataFrame
     df_concat = pd.merge(cans_desc, df, on = 'id', how = 'left')
     
-    # Define conditions and corresponding flags
+    # Set conditions and corresponding flags
     conditions = [
         df_concat['percent_scatter'] > 10,
         df_concat['percent_absorb'] > 10,
         (df_concat['percent_absorb'] + df_concat['percent_scatter'] > 10),
         df_concat['can_percent_scatter'] > df_concat['percent_scatter']
     ]
-
-    # Define flags
     flags = ['(*)', '(**)', '(***)', '(***)']
 
-    # Create an empty column for concatenated flags
+    # Add empty column
     df_concat['flag'] = ''
 
     for condition, flag in zip(conditions, flags):
@@ -737,11 +737,10 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
     # Obtain date and time
     current_date = datetime.datetime.now().strftime('%d-%m-%y-%H-%M-%S')
     
-    # Create filenames
+    # Set filenames for text and CSV returns
     txt_filename = f'{mantid_formula}_{current_date}.txt'
     csv_filename = f'{mantid_formula}_{current_date}.csv'
 
-    # Write sample information to a text file
     try:
         with open(txt_filename, 'w', encoding = 'utf-8') as txt_file:
             txt_file.write(sample_txt)
