@@ -407,6 +407,9 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
     # Find theoretical density in g/cc
     theory_density = molecular_mass/unit_cell_volume/0.6022 # in g/cc
 
+    # Determine neutron wavelength based upon neutron energy
+    neutron_wavelength = np.sqrt(81.81/neutron_energy)
+
     # Initialize empty dictionaries
     sample_mass = {}
     can_volume_dict = {}
@@ -427,8 +430,8 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
             sample_moles_flat = sample_mass_flat/molecular_mass
 
             # Populate dictionaries with `id` as key
-            sample_mass[id] = sample_mass_flat
-            can_volume_dict[id] = can_volume_flat
+            sample_mass[id] = round(sample_mass_flat, 3)
+            can_volume_dict[id] = round(can_volume_flat, 3)
             sample_moles[id] = sample_moles_flat
 
     # Check if `cyl` is in `can` parameter in xs_calculator() function
@@ -446,9 +449,9 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
             sample_moles_cyl = sample_mass_cyl/molecular_mass
 
             # Populate dictionaries with `id` as key
-            sample_mass[id] = sample_mass_cyl
+            sample_mass[id] = round(sample_mass_cyl, 3)
             sample_moles[id] = sample_moles_cyl
-            can_volume_dict[id] = can_volume_cyl
+            can_volume_dict[id] = round(can_volume_cyl, 3)
 
     # Check if `annulus` is in `can` parameter in xs_calculator() function
     if 'annulus' in can:
@@ -465,9 +468,9 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
             sample_moles_ann = sample_mass_cyl/molecular_mass
 
             # Populate dictionaries with `id` as key
-            sample_mass[id] = sample_mass_ann
+            sample_mass[id] = round(sample_mass_ann, 3)
             sample_moles[id] = sample_moles_ann
-            can_volume_dict[id] = can_volume_ann
+            can_volume_dict[id] = round(can_volume_ann, 3)
     
     # Find penetration depth due to scattering in cm
     scatter_depth = unit_cell_volume/(scatter_xs*pack_fraction)
@@ -502,8 +505,8 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
             percent_absorb_flat =  100 * (1-(np.exp(-(sample_thick_flat/absorb_depth))))
             
             # Populate dictionaries with `id` as key
-            percent_scatter[id] = percent_scatter_flat
-            percent_absorb[id] = percent_absorb_flat
+            percent_scatter[id] = round(percent_scatter_flat, 2)
+            percent_absorb[id] = round(percent_absorb_flat, 2)
 
     # Check if `cyl` is in `can` parameter in xs_calculator() function
     if 'cyl' in can:
@@ -520,8 +523,8 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
             percent_absorb_cyl = integral_cyl(absorb_xs, unit_cell_volume, pack_fraction, R1 = can_inner_radius)
 
             # Populate dictionaries with `id` as key
-            percent_scatter[id] = percent_scatter_cyl
-            percent_absorb[id] = percent_absorb_cyl
+            percent_scatter[id] = round(percent_scatter_cyl, 2)
+            percent_absorb[id] = round(percent_absorb_cyl, 2)
 
     # Check if `annulus` is in `can` parameter in xs_calculator() function
     if 'annulus' in can:
@@ -539,8 +542,8 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
             percent_absorb_ann = integral_ann(absorb_xs, unit_cell_volume, pack_fraction, R1 = sample_inner_radius_ann, R2 = sample_outer_radius_ann)
 
             # Populate dictionaries with `id` as key
-            percent_scatter[id] = percent_scatter_ann
-            percent_absorb[id] = percent_absorb_ann
+            percent_scatter[id] = round(percent_scatter_ann, 2)
+            percent_absorb[id] = round(percent_absorb_ann, 2)
 
     """
     Find scattering and absorption for sample can
@@ -580,9 +583,9 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
             can_percent_scatter_flat, can_percent_absorb_flat, can_mass_flat = calculate_flatPlate(can_total_thickness = can_total_thickness, can_volume = can_volume, scatter_depth = material_scatter_depth, absorb_depth = material_absorb_depth, theory_density = material_theory_density)
 
             # Populate dictionaries with `id` as key
-            can_percent_scatter[id] = can_percent_scatter_flat
-            can_percent_absorb[id] = can_percent_absorb_flat
-            can_mass[id] = can_mass_flat
+            can_percent_scatter[id] = round(can_percent_scatter_flat, 2)
+            can_percent_absorb[id] = round(can_percent_absorb_flat, 2)
+            can_mass[id] = round(can_mass_flat, 3)
 
     # Check if `annulus` is in `can` parameter in xs_calculator() function
     if 'cyl' in can:
@@ -616,9 +619,9 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
             can_percent_scatter_cyl, can_percent_absorb_cyl, can_mass_cyl = can_annulus(scatter_xs = material_scatter_xs, absorb_xs = material_absorb_xs, theory_density = material_theory_density, unit_cell_volume = material_unit_cell_volume, height = sample_height, inner_radius = can_inner_radius, outer_radius = can_outer_radius, volume = can_material_volume)
 
             # Populate dictionaries with `id` as key
-            can_percent_scatter[id] = can_percent_scatter_cyl
-            can_percent_absorb[id] = can_percent_absorb_cyl
-            can_mass[id] = can_mass_cyl
+            can_percent_scatter[id] = round(can_percent_scatter_cyl, 2)
+            can_percent_absorb[id] = round(can_percent_absorb_cyl, 2)
+            can_mass[id] = round(can_mass_cyl, 3)
 
     # Check if `annulus` is in `can` parameter in xs_calculator() function
     if 'annulus' in can:
@@ -652,9 +655,9 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
             can_percent_scatter_ann, can_percent_absorb_ann, can_mass_ann = can_annulus(scatter_xs = material_scatter_xs, absorb_xs = material_absorb_xs, theory_density = material_theory_density, unit_cell_volume = material_unit_cell_volume, height = can_height_cm, inner_radius = can_R3_cm, outer_radius = new_can_R4_cm, volume = can_material_volume_cm3)
             
             # Populate dictionaries with `id` as key
-            can_percent_scatter[id] = can_percent_scatter_ann
-            can_percent_absorb[id] = can_percent_absorb_ann
-            can_mass[id] = can_mass_ann
+            can_percent_scatter[id] = round(can_percent_scatter_ann, 2)
+            can_percent_absorb[id] = round(can_percent_absorb_ann, 2)
+            can_mass[id] = round(can_mass_ann, 3)
         
     # Convert dictionaries to DataFrames
     # Create dictionary `df_dict` of DataFrames
@@ -698,6 +701,10 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
     # Replace empty strings with NaN if no conditions are true
     df_concat['flag'] = df_concat['flag'].replace('', np.nan)
 
+    # Report sample moles as sample millimoles 
+    df_concat['sample_moles'] = round(df_concat['sample_moles']*1000, 3)
+    df_concat.rename(columns = {'sample_moles': 'sample_mmoles'}, inplace = True)
+
     # Drop `drawing_number` column
     df_concat.drop('drawing_number', axis = 1, inplace = True)
 
@@ -715,6 +722,7 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
     Lattice constant (gamma): {gamma}°
     Packing fraction: {pack_fraction}
     Incident neutron energy:   {neutron_energy} meV
+    Incident neutron wavelength: {round(neutron_wavelength, 3)} Å
     ============================
     '''
 
@@ -734,6 +742,46 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
     ==========================================
     '''
 
+    flag_txt = f'''
+    ==========================
+        Warning Flags
+    ==========================
+    (*)    % Scatter of sample > 10
+
+    (**)   % Absorb. of sample > 10
+
+    (***)  (% Scatter of sample + % Absorb. of sample) > 10
+
+    (****) % Scatter of can > % Scatter of sample
+    ==========================
+    '''
+
+    description_txt = f'''
+    ====================================================
+                    Variable Description
+    ====================================================
+    Id, sample can unique identifier.  This label contains the material of the can (Al, Cu, or V).
+
+    Description, description of the sample can geometry and dimensions.
+
+    Sample_mass_g, approximate mass of sample in grams to fill the sample can for the given packing fraction.
+
+    Can_volume_cm3, available can volume in cubic centimeters.
+
+    Sample_mmoles, millimoles of sample corresponding to the sample_mass_g column.
+
+    Percent_scatter, percent of neutrons scattered by the sample based upon the total neutron scattering cross-section and the geometry of the sample can.
+
+    Percent_absorb, percent of neutrons absorbed by the sample based upon the wavelength dependent neutron absorption and the geometry of the sample can.  Calculation does not account for any neutron absorption resonances.
+
+    Can_percent_scatter, percent of neutrons scattered by only the empty sample can based upon the total neutron scattering cross-section of the material and the geometry of the sample can.
+
+    Can_percent_absorb, percent of neutrons absorbed by only the empty sample can based upon the wavelength dependent neutron absorption and the geometry of the sample can.  Calculation does not account for any neutron absorption resonances.
+
+    Flag, warning flag based upon percent scattered and percent absorbed calculations.
+    ====================================================
+    '''
+
     # Obtain date and time
     current_date = datetime.datetime.now().strftime('%d-%m-%y-%H-%M-%S')
     
@@ -745,6 +793,8 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
         with open(txt_filename, 'w', encoding = 'utf-8') as txt_file:
             txt_file.write(sample_txt)
             txt_file.write(sample_can_txt)
+            txt_file.write(flag_txt)
+            txt_file.write(description_txt)
     except Exception as e:
         print(f'An error occurred while writing to text file: {e}')
 
