@@ -19,14 +19,15 @@ Enter the incident (incoming) neutron energy in meV. Users must set value betwee
 Enter the fraction of volume in the structure that is occupied by constituent particles. The packing fraction is dimensionless.
 
 ## Returns
-- **sample_mass_g** (float): Mass of the sample in grams
-- **can_volume_cm3** (float): Volume of the can in cubic centimeters (cm^3)
-- **sample_moles** (float): Number of moles of the formula unit in the sample
-- **percent_scatter** (float): Percentage of the incident beam that is scattered, with no absorption, for the sample
-- **percent_absorb** (float): Percentage of the incident beam that is absorbed, with no scattering, for the sample
-- **can_percent_scatter** (float): Percentage of the incident beam that is scattered, with no absorption, for the can
-- **can_percent_absorb** (float): Percentage of the incident beam that is absorbed, with no scattering, for the can
-- **can_mass_g** (float): Mass of the can in grams
+- **sample_mass_g** (float): Approximate mass of sample in grams to fill the sample can for the given packing fraction
+- **can_volume_cm3** (float): Available can volume in cubic centimeters (cm^3)
+- **sample_moles** (float): Millimoles of sample corresponding to approximate mass of sample
+- **percent_scatter** (float): Percent of neutrons scattered by the sample based upon the total neutron scattering cross-section and the geometry of the sample can
+- **percent_absorb** (float): Percent of neutrons absorbed by the sample based upon the wavelength dependent neutron absorption and the geometry of the sample can; does not account for any neutron absorption resonances
+- **can_percent_scatter** (float): Percent of neutrons scattered by only the empty sample can based upon the total neutron scattering cross-section of the material and the geometry of the sample can
+- **can_percent_absorb** (float): Percent of neutrons absorbed by only the empty sample can based upon the wavelength dependent neutron absorption and the geometry of the sample can; does not account for any neutron absorption resonances
+- **can_mass_g** (float): Mass of the empty sample can in grams
+- **flag** (str): Warning flag based upon percent scattered and percent absorbed calculations
 
 ## Updates
 Goldilockσ is built to mantain scientific reproducibility and leverages local dictionaries in addition to the Mantid project's Python API.
