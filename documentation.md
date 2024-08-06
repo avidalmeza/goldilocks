@@ -11,13 +11,10 @@ Refer to the [Mantid project's documentation](https://docs.mantidproject.org/v6.
 
 ### Lattice Parameters
 Enter the values of the lattice parameters a, b, c, alpha, beta, gamma, where a, b, c are lengths of the sides of the unit cell and alpha is the angle between b and c, beta is the angle between a and c, and gamma is the angle between a and b. Enter a, b, c in Angstroms. Enter alpha, beta, and gamma in degrees. Users who enter a CIF do not need to enter lattice parameters.
-
 ### Formula Units
 Enter the number of formula units (Z) in a crystallographic unit cell to calculate unit cell volume. Z is a unitless parameter. Users who enter a CIF do not need to enter this parameter.
-
 ### Incident Neutron Energy
 Enter the incident (incoming) neutron energy in meV. Users must set value between  0.01 to 100000 meV.
-
 ### Packing Fraction
 Enter the fraction of volume in the structure that is occupied by constituent particles. The packing fraction is dimensionless.
 
@@ -33,9 +30,7 @@ Enter the fraction of volume in the structure that is occupied by constituent pa
 
 ## Updates
 Goldilockσ is built to mantain scientific reproducibility and leverages local dictionaries in addition to the Mantid project's Python API.
-### New Sample Can
-Goldilockσ provides estimates for all standard powder cans (flat plate, cylinder, and annular) available at SNS and HFIR. 
 
-In the case of a new can, users can edit the corresponding CSV file ([flatPlate.csv](/src/dict/flatPlate.csv), [cylindrical.csv](/src/dict/cylindrical.csv), and [annulus.csv](/src/dict/annulus.csv)) with [add_can_dict.py](/src/add_can_dict.py). Alternatively, users can manually update the corresponding CSV file and manually add an entry for the can description to [canDescription.csv](/src/dict/canDescription.csv).
-### New Sample Can Material
-Goldilockσ provides estimates for powder cans made of aluminium, copper, or vanadium. In the case of a new sample can material, users can edit [material.csv](/src/dict/material.csv) through [add_material_dict.py](/src/add_material_dict.py) with a CIF. Alternatively, users without a CIF can set the values manually of the lattice parameters and formula units in [material.csv](/src/dict/material.csv).
+Goldilockσ provides estimates for all standard powder cans (flat plate, cylinder, and annular) available at SNS and HFIR. In the case of a new can of these geometries, users can edit the corresponding CSV file ([flatPlate.csv](/src/dict/flatPlate.csv), [cylindrical.csv](/src/dict/cylindrical.csv), and [annulus.csv](/src/dict/annulus.csv)) with [add_can.ipynb](/src/add_can.ipynb). Alternatively, users can manually update the corresponding CSV file and manually add an entry for the can description to [canDescription.csv](/src/dict/canDescription.csv).
+
+Goldilockσ provides estimates for powder cans made of aluminium, copper, or vanadium. In the case of a new sample can material, users can edit [material.csv](/src/dict/material.csv) through [add_can.ipynb](/src/add_can.ipynb) with a CIF. Alternatively, users without a CIF can set the values manually of the lattice parameters and formula units in [material.csv](/src/dict/material.csv).
