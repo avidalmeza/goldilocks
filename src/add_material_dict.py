@@ -1,5 +1,19 @@
 # add_material_dict.py
 
+import re
+import numpy as np
+import pandas as pd
+import mantid as mtd
+from mantid.simpleapi import CreateSampleWorkspace, SetSample
+from mantid.kernel import Material
+from read_cif import read_cif
+
+# Define uc_volume() function
+def uc_volume(a, b, c, alpha, gamma, beta):
+    # Find unit cell volume in A^3
+    unit_cell_volume = a * b * c * np.sqrt(1-np.cos(alpha*np.pi/180)**2 - np.cos(beta*np.pi/180)**2 - np.cos(gamma*np.pi/180)**2 + 2*np.cos(alpha*np.pi/180) * np.cos(beta*np.pi/180) * np.cos(gamma*np.pi/180))
+    return unit_cell_volume
+
 # Define add_material_dict() function
 def add_material_dict(cif_filepath, material_csv_filepath):
     # Extract mantid_formula, a, b, c, alpha, beta, gamma with read_cif() function
@@ -54,7 +68,7 @@ def add_material_dict(cif_filepath, material_csv_filepath):
 
     # Insert `new_row` DataFrame to end of `material_df` DataFrame and reset index
     material_df.loc[len(material_df)] = new_row
-    material_df = material_df.reset_index(drop=True)
+    material_df = material_df.reset_index(drop = True)
 
     # Write `material_df` as csv to material_csv_filepath
-    material_df.to_csv(material_csv_filepath, index=False)
+    material_df.to_csv(material_csv_filepath, index = False)
