@@ -1,5 +1,8 @@
 # read_cif.py
 
+import CifFile
+import re
+
 # Define read_cif() function
 def read_cif(filepath):
     # Read Crystallographic Information File
