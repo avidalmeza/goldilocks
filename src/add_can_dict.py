@@ -112,13 +112,12 @@ def add_can_dict(file_path, can_type, can_material, sample_height_mm, sample_wid
         # Set filepath and read CSV as DataFrame
         df = pd.read_csv(file_path)
         
-        sample_thick_mm = sample_outer_radius_mm - sample_inner_radius_mm
-        
-        sample_volume_mm3 = sample_height_mm * np.pi * (sample_outer_radius_mm**2 - can_inner_radius_mm**2)/1000
-        
         can_inner_radius_mm = sample_outer_radius_mm
         can_thick_mm = can_outer_radius_mm - can_inner_radius_mm
-        
+
+        sample_thick_mm = sample_outer_radius_mm - sample_inner_radius_mm
+        sample_volume_mm3 = sample_height_mm * np.pi * (sample_outer_radius_mm**2 - can_inner_radius_mm**2)/1000
+                
         insert_outer_radius_mm = sample_inner_radius_mm
         insert_thick_mm = insert_outer_radius_mm - insert_inner_radius_mm
 
