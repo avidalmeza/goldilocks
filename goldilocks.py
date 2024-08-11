@@ -171,7 +171,7 @@ def read_cif(filepath):
     # Iterate over each block in CIF
     for database_code_PCD, block in cif.items():
         # Print Pearson's Crystal Data browser code
-        print(f'Block: {database_code_PCD}')
+        # print(f'Block: {database_code_PCD}')
     
         # Initialize empty dictionary
         block_data = {}
@@ -197,9 +197,9 @@ def read_cif(filepath):
         # print(f'Block: {database_code_PCD}')
 
     # Print value for each key of interest
-    for key, value in block_data.items():
-        print(f'{key}: {value}')
-        print()
+    # for key, value in block_data.items():
+    #    print(f'{key}: {value}')
+    #    print()
 
     # Extract variables of interest
     a = remove_parentheses(cif_dict[database_code_PCD]['_cell_length_a'])
@@ -712,7 +712,7 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
     =============================
         Sample Information
     =============================
-    Formula:          {mantid_formula}
+    Formula Unit (fu):  {mantid_formula}
     Z:                {Z_param}
     Lattice constant (a): {a} Å
     Lattice constant (b): {b} Å
@@ -731,7 +731,7 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
         Sample Can Independent Values
     =========================================
     Calculated unit cell volume (Å^3): {round(unit_cell_volume, 3)}
-    Molecular mass (g/mol/fu): {round(molecular_mass/float(Z_param), 3)}
+    Molecular mass (g/mol/fu/Z): {round(molecular_mass/float(Z_param), 3)}
     Molecular mass per unit cell (g/mol/unit cell): {round(molecular_mass, 3)}
     Scattering cross section (bn/fu): {round(scatter_xs, 3)}
     Absorption cross section (bn/fu): {round(absorb_xs, 3)}
@@ -768,7 +768,7 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
 
     Can_volume_cm3, available can volume in cubic centimeters.
 
-    Sample_mmoles, millimoles of sample corresponding to the sample_mass_g column.
+    Sample_mmoles, millimoles of sample formula units corresponding to the sample_mass_g column.
 
     Percent_scatter, percent of neutrons scattered by the sample based upon the total neutron scattering cross-section and the geometry of the sample can.
 
