@@ -42,7 +42,7 @@ def add_can_dict(file_path, can_type, can_material, sample_height_mm, sample_wid
 
         can_material_volume_cm3 = (sample_area_mm2*can_total_thick_mm)/1000
 
-        unique = f'{replace_decimal_with_p(sample_thick_mm)}'
+        unique = f'{replace_decimal_with_p(sample_thick_mm)}mm'
         id = f'{can_type}_{unique}_{can_material}'
 
         new_row = {
@@ -83,7 +83,7 @@ def add_can_dict(file_path, can_type, can_material, sample_height_mm, sample_wid
 
         can_material_volume_cm3 = np.pi*can_height_mm*(can_outer_radius_mm**2 - can_inner_radius_mm**2)/1000
         
-        unique = f'{replace_decimal_with_p(sample_inner_radius_mm)}_{replace_decimal_with_p(sample_height_mm)}'
+        unique = f'{replace_decimal_with_p(sample_inner_radius_mm)}mm_{replace_decimal_with_p(sample_height_mm)}mm'
         id = f'{can_type}_{unique}_{can_material}'
 
         new_row = {
@@ -138,7 +138,7 @@ def add_can_dict(file_path, can_type, can_material, sample_height_mm, sample_wid
         new_can_material_volume_outer_cm3 = can_height_cm * np.pi * (new_can_R4_cm**2 - can_R3_cm**2) # in cm^3
         new_can_material_total_volume_cm3 = can_material_volume_inner_cm3 + new_can_material_volume_outer_cm3 # in cm^3
 
-        unique = f'{replace_decimal_with_p(sample_height_mm)}_{replace_decimal_with_p(insert_inner_radius_mm)}'
+        unique = f'{replace_decimal_with_p(sample_height_mm)}mm_{replace_decimal_with_p(insert_inner_radius_mm)}mm'
         id = f'{can_type}_{unique}_{can_material}'
 
         new_row = {
