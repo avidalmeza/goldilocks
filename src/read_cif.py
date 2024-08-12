@@ -17,7 +17,7 @@ def read_cif(filepath):
     # Iterate over each block in CIF
     for database_code_PCD, block in cif.items():
         # Print Pearson's Crystal Data browser code
-        print(f'Block: {database_code_PCD}')
+        # print(f'Block: {database_code_PCD}')
     
         # Initialize empty dictionary
         block_data = {}
@@ -43,9 +43,9 @@ def read_cif(filepath):
         # print(f'Block: {database_code_PCD}')
 
     # Print value for each key of interest
-    for key, value in block_data.items():
-        print(f'{key}: {value}')
-        print()
+    # for key, value in block_data.items():
+        # print(f'{key}: {value}')
+        # print()
 
     # Define remove_parentheses() function
     def remove_parentheses(i):
