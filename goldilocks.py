@@ -305,7 +305,7 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
     file_extension = '.cif'
 
     # Initialize to avoid UnboundLocalError
-    mantid_formula = "" # Note: "", initialize type str
+    mantid_formula = "" # Initialize type str
     total_n = 0
 
     # Check if x is a filepath for a CIF
@@ -326,6 +326,7 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
     except (ValueError, AttributeError) as e:
         # If isinstance() and validate_formula() returns True 
         if isinstance(x, str) and validate_formula(mantid_format, x):
+            # if density is not None:
             # Define mantid_formula if `True`
             mantid_formula = str(x)
 
@@ -383,6 +384,14 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
     # Define scattering cross section per formula unit in bn/fu
     scatter_xs = float(sample.getMaterial().totalScatterXSection()*total_n) # in bn/fu
     # print(f'Total scattering cross-section: {scatter_xs}')
+
+    # Retrieve incoherent scattering cross-section
+    # Define incoherent scattering cross section per formula unit in bn/fu
+    incoh_scatter_xs = float(sample.getMaterial().incohScatterXSection()*total_n) # in bn/fu
+
+    # Retrieve coherent scattering cross-section
+    # Define coherent scattering cross section per formula unit in bn/fu
+    coh_scatter_xs = float(sample.getMaterial().cohScatterXSection()*total_n) # in bn/fu
 
     # Retrieve coherent scattering length
     scatter_length = float(sample.getMaterial().cohScatterLength()) # in fm
@@ -733,7 +742,9 @@ def xs_calculator(x, neutron_energy, pack_fraction, can = ['flat', 'cyl', 'annul
     Calculated unit cell volume (Å^3): {round(unit_cell_volume, 3)}
     Molecular mass (g/mol/fu/Z): {round(molecular_mass/float(Z_param), 3)}
     Molecular mass per unit cell (g/mol/unit cell): {round(molecular_mass, 3)}
-    Scattering cross section (bn/fu): {round(scatter_xs, 3)}
+    Incoherent scattering cross section (bn/fu): {round(incoh_scatter_xs, 3)}
+    Coherent scattering cross section (bn/fu): {round(coh_scatter_xs, 3)}
+    Total scattering cross section (bn/fu): {round(scatter_xs, 3)}
     Absorption cross section (bn/fu): {round(absorb_xs, 3)}
     Scattering penetration depth (cm): {round(scatter_depth, 3)}
     Absorption penetration depth (cm): {round(absorb_depth, 3)}
