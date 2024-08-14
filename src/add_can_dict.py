@@ -116,7 +116,7 @@ def add_can_dict(file_path, can_type, can_material, sample_height_mm, sample_wid
         can_thick_mm = can_outer_radius_mm - can_inner_radius_mm
 
         sample_thick_mm = sample_outer_radius_mm - sample_inner_radius_mm
-        sample_volume_mm3 = sample_height_mm * np.pi * (sample_outer_radius_mm**2 - can_inner_radius_mm**2)/1000
+        sample_volume_mm3 = sample_height_mm * np.pi * (sample_outer_radius_mm**2 - sample_inner_radius_mm**2)
                 
         insert_outer_radius_mm = sample_inner_radius_mm
         insert_thick_mm = insert_outer_radius_mm - insert_inner_radius_mm
@@ -130,7 +130,7 @@ def add_can_dict(file_path, can_type, can_material, sample_height_mm, sample_wid
         can_material_volume_inner_cm3 = can_height_cm * np.pi * (can_R2_cm**2 - can_R1_cm**2)
         can_material_volume_outer_cm3 = can_height_cm * np.pi * (can_R4_cm**2 - can_R3_cm**2)
 
-        can_material_volume_cm3 = (can_material_volume_outer_cm3 + can_material_volume_inner_cm3)/1000
+        can_material_volume_cm3 = can_material_volume_outer_cm3 + can_material_volume_inner_cm3
 
         d = np.sqrt(can_R2_cm**2 - can_R1_cm**2 + can_R4_cm**2) - can_R4_cm # in cm
         new_can_R4_cm = can_R4_cm + d # in cm
