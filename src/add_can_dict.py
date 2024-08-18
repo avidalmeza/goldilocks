@@ -83,7 +83,9 @@ def add_can_dict(file_path, can_type, can_material, sample_height_mm, sample_wid
 
         can_material_volume_cm3 = np.pi*can_height_mm*(can_outer_radius_mm**2 - can_inner_radius_mm**2)/1000
         
-        unique = f'{replace_decimal_with_p(sample_inner_radius_mm)}mm_{replace_decimal_with_p(sample_height_mm)}mm'
+        can_diam_mm = 2*sample_inner_radius_mm
+
+        unique = f'{replace_decimal_with_p(can_diam_mm)}mm_{replace_decimal_with_p(sample_height_mm)}mm'
         id = f'{can_type}_{unique}_{can_material}'
 
         new_row = {

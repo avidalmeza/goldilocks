@@ -288,7 +288,7 @@ def read_cif(filepath):
     return mantid_formula, sample_n_density, total_n, a, b, c, alpha, beta, gamma, Z_param
 
 # Define xs_calculator function; cross-section calculator
-def xs_calculator(x, pack_fraction, neutron_energy = None, neutron_wavelength = None, can = ['flat', 'cyl', 'annulus'], density = None, Z_param = None, a = None, b = None, c = None, alpha = None, beta = None, gamma = None):
+def xs_calculator(x, pack_fraction = 1.0, neutron_energy = None, neutron_wavelength = None, can = ['flat', 'cyl', 'annulus'], density = None, Z_param = None, a = None, b = None, c = None, alpha = None, beta = None, gamma = None):
     # Create empty data container/workspace
     ws = CreateSampleWorkspace()
 
