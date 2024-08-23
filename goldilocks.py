@@ -51,7 +51,7 @@ def sum_total_n(s):
 # Define uc_volume() function
 def uc_volume(a, b, c, alpha, gamma, beta):
     # Find unit cell volume in A^3
-    unit_cell_volume = a * b * c * np.sqrt(1-np.cos(alpha * np.pi/180)**2 - np.cos(beta * np.pi/180)**2 - np.cos(gamma * np.pi/180)**2 + 2*np.cos(alpha * np.pi/180) * np.cos(beta * np.pi/180) * np.cos(gamma * np.pi/180))
+    unit_cell_volume = a * b * c * np.sqrt(1 - np.cos(alpha * np.pi / 180)**2 - np.cos(beta * np.pi / 180)**2 - np.cos(gamma * np.pi / 180)**2 + 2*np.cos(alpha * np.pi / 180) * np.cos(beta * np.pi / 180) * np.cos(gamma * np.pi / 180))
     return unit_cell_volume
 
 # Define material_properties() function
@@ -81,7 +81,7 @@ def integrand_cyl(x, paramwave):
     zeta = paramwave[1]
 
     dval = np.sqrt(R1**2 - x**2)
-    integrand = 1 - np.exp(-2 * dval/zeta)
+    integrand = 1 - np.exp(-2 * dval / zeta)
     return integrand
 
 # Define integral_cyl() function
@@ -89,7 +89,7 @@ def integral_cyl(xs, unit_cell_volume, pack_fraction, R1):
     zeta = unit_cell_volume/pack_fraction/xs # Note: packing efficiency? units?
     paramwave = [R1, zeta]
     int1, _ = quad(integrand_cyl, -R1, R1, args = (paramwave))
-    result = 100 * int1/(2 * R1)
+    result = 100 * int1 / (2 * R1)
     return result
 
 # Define integrand_ann() function
@@ -107,12 +107,12 @@ def integrand_ann(x, paramwave):
         dval1 = 0
     
     dval2 = np.sqrt(R2**2 - x**2)
-    integrand = 1 - np.exp(-2 * (dval2-dval1)/zeta)
+    integrand = 1 - np.exp(-2 * (dval2 - dval1) / zeta)
     return integrand
 
 # Define integral_ann() function
 def integral_ann(xs, unit_cell_volume, pack_fraction, R1, R2):
-    zeta = unit_cell_volume/pack_fraction/xs
+    zeta = unit_cell_volume / pack_fraction / xs
     paramwave = [R1, zeta, R2]
     
     # Set number of points
@@ -124,20 +124,20 @@ def integral_ann(xs, unit_cell_volume, pack_fraction, R1, R2):
     integrand_values = np.array([integrand_ann(x, paramwave) for x in x_values])
     
     # Perform trapezoidal integration
-    integration = 100*trapezoid(integrand_values, x_values)
-    result = integration/(2*R2)
+    integration = 100 * trapezoid(integrand_values, x_values)
+    result = integration / (2 * R2)
     return result            
 
 # Define calculate_flatPlate() function
 def calculate_flatPlate(can_total_thickness, can_volume, scatter_depth, absorb_depth, theory_density):
     # Find percent of incident beam that is scattered (assume no absorption)
-    can_percent_scatter = 100 * (1-(np.exp(-(can_total_thickness/scatter_depth))))
+    can_percent_scatter = 100 * (1-(np.exp(-(can_total_thickness / scatter_depth))))
 
     # Find percent of incident beam that is absorbed (assume no scattering)
-    can_percent_absorb = 100 * (1-(np.exp(-(can_total_thickness/absorb_depth))))
+    can_percent_absorb = 100 * (1-(np.exp(-(can_total_thickness / absorb_depth))))
 
     # Find sample mass in grams
-    can_mass = can_volume*theory_density # in grams
+    can_mass = can_volume * theory_density # in grams
 
     # Return can_percent_scatter, can_percent_absorb, can_mass
     return can_percent_scatter, can_percent_absorb, can_mass
@@ -151,8 +151,8 @@ def can_annulus(scatter_xs, absorb_xs, theory_density, unit_cell_volume, height,
     can_percent_absorb = integral_ann(absorb_xs, unit_cell_volume, pack_fraction = 1.0, R1 = inner_radius, R2 = outer_radius)
     
     # Find sample mass in grams
-    volume = height*np.pi*(outer_radius**2 - inner_radius**2) # in cm^3
-    can_mass = volume*theory_density # in grams
+    volume = height * np.pi * (outer_radius**2 - inner_radius**2) # in cm^3
+    can_mass = volume * theory_density # in grams
 
     # Return can_percent_scatter, can_percent_absorb, can_mass
     return can_percent_scatter, can_percent_absorb, can_mass
@@ -243,7 +243,7 @@ def read_cif(filepath):
             subscript = match.group(2) if match.group(2) else '1'
 
             # Find how many numbers per formula units
-            n_fu = eval(Z_param)*eval(subscript)
+            n_fu = eval(Z_param) * eval(subscript)
 
             # Create new entry in dictionary for each element
             elements[f'element_{i+1}'] = {'symbol': element_symbol, 'subscript': subscript, 'n_fu': n_fu}
@@ -349,9 +349,9 @@ def xs_calculator(x, pack_fraction = 1.0, neutron_energy = None, neutron_wavelen
                 molecular_mass = float(sample.getMaterial().relativeMolecularMass()) # in g/mol/fu
 
                 # Set false lattice constants, assume cubic structure
-                a = np.power(molecular_mass/density/0.6022, 1/3)
-                b = np.power(molecular_mass/density/0.6022, 1/3)
-                c = np.power(molecular_mass/density/0.6022, 1/3)
+                a = np.power(molecular_mass / density / 0.6022, 1 / 3)
+                b = np.power(molecular_mass / density / 0.6022, 1 / 3)
+                c = np.power(molecular_mass / density / 0.6022, 1 / 3)
                 alpha = 90
                 beta = 90
                 gamma = 90
@@ -400,11 +400,11 @@ def xs_calculator(x, pack_fraction = 1.0, neutron_energy = None, neutron_wavelen
 
     # If neutron_wavelength is given, calculate neutron_energy 
     if neutron_energy is None and neutron_wavelength is not None:
-        neutron_energy = 81.81/neutron_wavelength/neutron_wavelength # in meV
+        neutron_energy = 81.81 / neutron_wavelength / neutron_wavelength # in meV
 
     # If neutron_energy is given, calculate neutron_wavelength 
     if neutron_energy is not None and neutron_wavelength is None:
-        neutron_wavelength = np.sqrt(81.81/neutron_energy) # in Å
+        neutron_wavelength = np.sqrt(81.81 / neutron_energy) # in Å
 
     # If neutron_energy and neutron_wavelength are not given
     if neutron_energy is None and neutron_wavelength is None:
@@ -423,21 +423,21 @@ def xs_calculator(x, pack_fraction = 1.0, neutron_energy = None, neutron_wavelen
 
     # Retrieve absorption cross-section
     # Define absorption cross section per formula unit in bn/fu
-    absorb_xs = (float(sample.getMaterial().absorbXSection()*total_n))*np.sqrt(25/neutron_energy) # in bn/fu
+    absorb_xs = (float(sample.getMaterial().absorbXSection() * total_n)) * np.sqrt(25 / neutron_energy) # in bn/fu
     # print(f'Absorption cross-section: {absorb_xs}')
 
     # Retrieve total scattering cross-section
     # Define scattering cross section per formula unit in bn/fu
-    scatter_xs = float(sample.getMaterial().totalScatterXSection()*total_n) # in bn/fu
+    scatter_xs = float(sample.getMaterial().totalScatterXSection() * total_n) # in bn/fu
     # print(f'Total scattering cross-section: {scatter_xs}')
 
     # Retrieve incoherent scattering cross-section
     # Define incoherent scattering cross section per formula unit in bn/fu
-    incoh_scatter_xs = float(sample.getMaterial().incohScatterXSection()*total_n) # in bn/fu
+    incoh_scatter_xs = float(sample.getMaterial().incohScatterXSection() * total_n) # in bn/fu
 
     # Retrieve coherent scattering cross-section
     # Define coherent scattering cross section per formula unit in bn/fu
-    coh_scatter_xs = float(sample.getMaterial().cohScatterXSection()*total_n) # in bn/fu
+    coh_scatter_xs = float(sample.getMaterial().cohScatterXSection() * total_n) # in bn/fu
 
     # Retrieve coherent scattering length
     scatter_length = float(sample.getMaterial().cohScatterLength()) # in fm
@@ -447,6 +447,11 @@ def xs_calculator(x, pack_fraction = 1.0, neutron_energy = None, neutron_wavelen
     # Define molecular mass in g/mol/fu
     molecular_mass = float(sample.getMaterial().relativeMolecularMass()) # in g/mol/fu
     # print(f'Relative molecular mass: {molecular_mass}')
+
+    # Find equivelent mass of vanadium per mass of sample
+    molecular_mass_vanadium = 50.941 # in g/mol/atom of vanadium
+    incoh_xs_vanadium = 5.08 # in barns/atom 
+    van_equiv_incoherent = molecular_mass_vanadium / incoh_xs_vanadium * incoh_scatter_xs / molecular_mass
 
     # Convert string values to floats
     a = float(a)
@@ -460,10 +465,10 @@ def xs_calculator(x, pack_fraction = 1.0, neutron_energy = None, neutron_wavelen
     unit_cell_volume = uc_volume(a, b, c, alpha, beta, gamma)
     
     # Find theoretical density in g/cc
-    theory_density = molecular_mass/unit_cell_volume/0.6022 # in g/cc
+    theory_density = molecular_mass / unit_cell_volume / 0.6022 # in g/cc
 
     # Determine neutron wavelength based upon neutron energy
-    neutron_wavelength = np.sqrt(81.81/neutron_energy)
+    neutron_wavelength = np.sqrt(81.81 / neutron_energy)
 
     # Initialize empty dictionaries
     sample_mass = {}
@@ -476,13 +481,13 @@ def xs_calculator(x, pack_fraction = 1.0, neutron_energy = None, neutron_wavelen
         for index, row in flat_plate.iterrows():
             # Extract id and can_volume_mm3 for each row
             id = row['id']
-            can_volume_flat = row['can_volume_mm3']/1000 # in cm^3
+            can_volume_flat = row['can_volume_mm3'] / 1000 # in cm^3
 
             # Find sample mass in grams
-            sample_mass_flat = can_volume_flat*theory_density*pack_fraction # in grams
+            sample_mass_flat = can_volume_flat * theory_density * pack_fraction # in grams
         
             # Find number of moles of formula unit in sample
-            sample_moles_flat = sample_mass_flat/molecular_mass
+            sample_moles_flat = sample_mass_flat / molecular_mass
 
             # Populate dictionaries with id as key
             sample_mass[id] = round(sample_mass_flat, 3)
@@ -495,13 +500,13 @@ def xs_calculator(x, pack_fraction = 1.0, neutron_energy = None, neutron_wavelen
         for index, row in cylindrical.iterrows():
             # Extract id and can_volume_mm3 for each row
             id = row['id']
-            can_volume_cyl = row['can_volume_mm3']/1000 # in cm^3
+            can_volume_cyl = row['can_volume_mm3'] / 1000 # in cm^3
 
             # Find sample mass in grams
-            sample_mass_cyl = can_volume_cyl*theory_density*pack_fraction # in grams
+            sample_mass_cyl = can_volume_cyl * theory_density * pack_fraction # in grams
 
             # Find number of moles of formula unit in sample
-            sample_moles_cyl = sample_mass_cyl/molecular_mass
+            sample_moles_cyl = sample_mass_cyl / molecular_mass
 
             # Populate dictionaries with id as key
             sample_mass[id] = round(sample_mass_cyl, 3)
@@ -514,13 +519,13 @@ def xs_calculator(x, pack_fraction = 1.0, neutron_energy = None, neutron_wavelen
         for index, row in annulus.iterrows():
             # Extract id and `can_volume_mm3` for each row
             id = row['id']
-            can_volume_ann = row['sample_volume_mm3']/1000 # in cm^3
+            can_volume_ann = row['sample_volume_mm3'] / 1000 # in cm^3
 
             # Find sample mass in grams
-            sample_mass_ann = can_volume_ann*theory_density*pack_fraction # in grams
+            sample_mass_ann = can_volume_ann * theory_density * pack_fraction # in grams
 
             # Find number of moles of formula unit in sample
-            sample_moles_ann = sample_mass_cyl/molecular_mass
+            sample_moles_ann = sample_mass_cyl / molecular_mass
 
             # Populate dictionaries with id as key
             sample_mass[id] = round(sample_mass_ann, 3)
@@ -528,16 +533,16 @@ def xs_calculator(x, pack_fraction = 1.0, neutron_energy = None, neutron_wavelen
             can_volume_dict[id] = round(can_volume_ann, 3)
     
     # Find penetration depth due to scattering in cm
-    scatter_depth = unit_cell_volume/(scatter_xs*pack_fraction)
+    scatter_depth = unit_cell_volume / (scatter_xs * pack_fraction)
 
     # Find thickness of a 10 percent scatterer in cm
-    scatter_thick = np.log(0.9)*scatter_depth
+    scatter_thick = np.log(0.9) * scatter_depth
     
     # Find penetration depth due to absorption in cm
-    absorb_depth = unit_cell_volume/(absorb_xs*pack_fraction)
+    absorb_depth = unit_cell_volume / (absorb_xs * pack_fraction)
     
     # Find total penetration depth due to scattering and absorption in cm
-    total_depth = unit_cell_volume/((scatter_xs+absorb_xs)*pack_fraction)
+    total_depth = unit_cell_volume / ((scatter_xs + absorb_xs) * pack_fraction)
 
     # Initialize empty dictionaries
     percent_scatter = {}
@@ -551,13 +556,13 @@ def xs_calculator(x, pack_fraction = 1.0, neutron_energy = None, neutron_wavelen
             id = row['id']
 
             # Find thickness of sample spread homogenously over sample can
-            sample_thick_flat = row['sample_thick_mm']/10 # in cm
+            sample_thick_flat = row['sample_thick_mm'] / 10 # in cm
 
             # Find percent of incident beam that is scattered (assume no absorption)
-            percent_scatter_flat = 100 * (1-(np.exp(-(sample_thick_flat/scatter_depth))))
+            percent_scatter_flat = 100 * (1-(np.exp(-(sample_thick_flat / scatter_depth))))
     
             # Find percent of incident beam that is absorbed (assume no scattering)
-            percent_absorb_flat =  100 * (1-(np.exp(-(sample_thick_flat/absorb_depth))))
+            percent_absorb_flat =  100 * (1-(np.exp(-(sample_thick_flat / absorb_depth))))
             
             # Populate dictionaries with id as key
             percent_scatter[id] = round(percent_scatter_flat, 2)
@@ -569,7 +574,7 @@ def xs_calculator(x, pack_fraction = 1.0, neutron_energy = None, neutron_wavelen
         for index, row in cylindrical.iterrows():
             # Extract id and can_inner_radius_mm for each row
             id = row['id']
-            can_inner_radius = row['can_inner_radius_mm']/10 # in cm
+            can_inner_radius = row['can_inner_radius_mm'] / 10 # in cm
 
             # Find percent of incident beam that is scattered (assume no absorption)
             percent_scatter_cyl = integral_cyl(scatter_xs, unit_cell_volume, pack_fraction, R1 = can_inner_radius)
@@ -587,8 +592,8 @@ def xs_calculator(x, pack_fraction = 1.0, neutron_energy = None, neutron_wavelen
         for index, row in annulus.iterrows():
             # Extract id, sample_inner_radius_mm, and sample_outer_radius_mm for each row
             id = row['id']
-            sample_inner_radius_ann = row['sample_inner_radius_mm']/10 # in cm
-            sample_outer_radius_ann = row['sample_outer_radius_mm']/10 # in cm
+            sample_inner_radius_ann = row['sample_inner_radius_mm'] / 10 # in cm
+            sample_outer_radius_ann = row['sample_outer_radius_mm'] / 10 # in cm
 
             # Find percent of incident beam that is scattered (assume no absorption)
             percent_scatter_ann = integral_ann(scatter_xs, unit_cell_volume, pack_fraction, R1 = sample_inner_radius_ann, R2 = sample_outer_radius_ann)
@@ -615,15 +620,15 @@ def xs_calculator(x, pack_fraction = 1.0, neutron_energy = None, neutron_wavelen
             # Extract id, material, can_total_thick_mm, and can_volume_mm3 for each row
             id = row['id']
             can_material = row['material']
-            can_total_thickness = row['can_total_thick_mm']/10  # in cm
+            can_total_thickness = row['can_total_thick_mm'] / 10  # in cm
             can_volume = row['can_material_volume_cm3']
 
             material_row = material[material['material'] == can_material].iloc[0]
             
             # Set absorption cross-section in bn/fu
-            material_absorb_xs = material_row['absorb_xs']*np.sqrt(25/neutron_energy)*material_row['Z_param'] # in bn/fu
+            material_absorb_xs = material_row['absorb_xs'] * np.sqrt(25 / neutron_energy) * material_row['Z_param'] # in bn/fu
             # Set total scattering cross-section in bn/fu
-            material_scatter_xs = material_row['scatter_xs']*material_row['Z_param'] # in bn/fu
+            material_scatter_xs = material_row['scatter_xs'] * material_row['Z_param'] # in bn/fu
             # Set relative molecular mass
             material_molecular_mass = material_row['molecular_mass']
             # Set unit cell volume
@@ -649,17 +654,17 @@ def xs_calculator(x, pack_fraction = 1.0, neutron_energy = None, neutron_wavelen
             # Extract id, material, can_inner_radius_mm, can_outer_radius_mm, and sample_height_mm for each row
             id = row['id']
             can_material = row['material']
-            can_inner_radius = row['can_inner_radius_mm']/10 # in cm
-            can_outer_radius = row['can_outer_radius_mm']/10 # in cm
-            sample_height = row['sample_height_mm']/10 # in cm
+            can_inner_radius = row['can_inner_radius_mm'] / 10 # in cm
+            can_outer_radius = row['can_outer_radius_mm'] / 10 # in cm
+            sample_height = row['sample_height_mm'] / 10 # in cm
             can_material_volume = row['can_material_volume_cm3']
 
             material_row = material[material['material'] == can_material].iloc[0]
             
             # Set absorption cross-section in bn/fu
-            material_absorb_xs = material_row['absorb_xs']*np.sqrt(25/neutron_energy)*material_row['Z_param'] # in bn/fu
+            material_absorb_xs = material_row['absorb_xs'] * np.sqrt(25 / neutron_energy) * material_row['Z_param'] # in bn/fu
             # Set total scattering cross-section in bn/fu
-            material_scatter_xs = material_row['scatter_xs']*material_row['Z_param'] # in bn/fu
+            material_scatter_xs = material_row['scatter_xs'] * material_row['Z_param'] # in bn/fu
             # Set relative molecular mass
             material_molecular_mass = material_row['molecular_mass']
             # Set unit cell volume
@@ -693,9 +698,9 @@ def xs_calculator(x, pack_fraction = 1.0, neutron_energy = None, neutron_wavelen
             material_row = material[material['material'] == can_material].iloc[0]
             
             # Set absorption cross-section in bn/fu
-            material_absorb_xs = material_row['absorb_xs']*np.sqrt(25/neutron_energy)*material_row['Z_param'] # in bn/fu
+            material_absorb_xs = material_row['absorb_xs'] * np.sqrt(25 / neutron_energy) * material_row['Z_param'] # in bn/fu
             # Set total scattering cross-section in bn/fu
-            material_scatter_xs = material_row['scatter_xs']*material_row['Z_param'] # in bn/fu
+            material_scatter_xs = material_row['scatter_xs'] * material_row['Z_param'] # in bn/fu
             # Set relative molecular mass
             material_molecular_mass = material_row['molecular_mass']
             # Set unit cell volume
@@ -757,7 +762,7 @@ def xs_calculator(x, pack_fraction = 1.0, neutron_energy = None, neutron_wavelen
     df_concat['flag'] = df_concat['flag'].replace('', np.nan)
 
     # Report sample moles as sample millimoles 
-    df_concat['sample_moles'] = round(df_concat['sample_moles']*1000, 3)
+    df_concat['sample_moles'] = round(df_concat['sample_moles'] * 1000, 3)
     df_concat.rename(columns = {'sample_moles': 'sample_mmoles'}, inplace = True)
 
     # Drop drawing_number column
@@ -786,7 +791,7 @@ def xs_calculator(x, pack_fraction = 1.0, neutron_energy = None, neutron_wavelen
         Sample Can Independent Values
     =========================================
     Calculated unit cell volume (Å^3): {round(unit_cell_volume, 3)}
-    Molecular mass (g/mol/fu/Z): {round(molecular_mass/float(Z_param), 3)}
+    Molecular mass (g/mol/fu/Z): {round(molecular_mass / float(Z_param), 3)}
     Molecular mass per unit cell (g/mol/unit cell): {round(molecular_mass, 3)}
     Incoherent scattering cross section (bn/fu): {round(incoh_scatter_xs, 3)}
     Coherent scattering cross section (bn/fu): {round(coh_scatter_xs, 3)}
@@ -796,6 +801,7 @@ def xs_calculator(x, pack_fraction = 1.0, neutron_energy = None, neutron_wavelen
     Absorption penetration depth (cm): {round(absorb_depth, 3)}
     Total peneteration depth (cm):  {round(total_depth, 3)}
     Theoretical sample density (g/cc): {round(theory_density, 3)}
+    Vanadium equivelent incoherent scatterer (g_V/g_fu): {round(van_equiv_incoherent, 4)}
     ==========================================
     '''
 

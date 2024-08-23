@@ -11,7 +11,7 @@ from mantid.kernel import Material
 # Define uc_volume() function
 def uc_volume(a, b, c, alpha, gamma, beta):
     # Find unit cell volume in A^3
-    unit_cell_volume = a * b * c * np.sqrt(1-np.cos(alpha*np.pi/180)**2 - np.cos(beta*np.pi/180)**2 - np.cos(gamma*np.pi/180)**2 + 2*np.cos(alpha*np.pi/180) * np.cos(beta*np.pi/180) * np.cos(gamma*np.pi/180))
+    unit_cell_volume = a * b * c * np.sqrt(1 - np.cos(alpha * np.pi / 180)**2 - np.cos(beta * np.pi / 180)**2 - np.cos(gamma * np.pi / 180)**2 + 2*np.cos(alpha * np.pi / 180) * np.cos(beta * np.pi / 180) * np.cos(gamma * np.pi / 180))
     return unit_cell_volume
 
 # Define read_cif() function
@@ -79,7 +79,7 @@ def read_cif(filepath):
 
     # Find sample number density
     # Number density of sample in number of atoms or formula units per cubic Angstrom
-    sample_n_density = eval(Z_param)/eval(cell_volume)
+    sample_n_density = eval(Z_param) / eval(cell_volume)
 
     # Split string by spaces
     formula_split = formula.split() if formula else []
@@ -108,7 +108,7 @@ def read_cif(filepath):
             subscript = match.group(2) if match.group(2) else '1'
 
             # Find how many numbers per formula units
-            n_fu = eval(Z_param)*eval(subscript)
+            n_fu = eval(Z_param) * eval(subscript)
 
             # Create new entry in dictionary for each element
             elements[f'element_{i+1}'] = {'symbol': element_symbol, 'subscript': subscript, 'n_fu': n_fu}
