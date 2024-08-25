@@ -21,23 +21,25 @@ conda env create -f environment.yml
 conda activate goldilocks
 ```
 
-### Pathways 
-Users can run the calculator from within the Jupyter Notebook or from the Terminal, Command Prompt, or another CLI. Make sure the virtual environment is activated before running the calculator.
+Before running the calculator, ensure that your virtual environment is activated. This step is crucial to avoid issues with dependencies.
 
-Refer to the [documentation](/documentation.md) for the calculator inputs and outputs as well as use guidelines. 
+### Pathways 
+Users can run the calculator from within a Jupyter Notebook, the Terminal (Linux/macOS), Command Prompt (Windows), or any other Command Line Interface (CLI).
 
 #### Jupyter Notebook
-3. Open [*xs_calculator.ipynb*](/xs_calculator.ipynb) and set values
+3. Open [*xs_calculator.ipynb*](/xs_calculator.ipynb) and set calculator inputs
 
-4. Execute code chunk
+4. Run the calculator directly within the Jupyter Notebook
 
-#### Command Line
-3. Open [*xs_calculator.py*](/xs_calculator.py) and set values
+#### Terminal/Command Prompt
+3. Open [*xs_calculator.py*](/xs_calculator.py) and set calculator inputs
 
-4. Execute updated script from CLI
+4. Use CLI of choice to execute script
 ```
 python xs_calculator.py
 ```
+
+Refer to the [documentation](/documentation.md) for detailed instructions on calculator inputs and usage guidelines.
 
 ## Contributing
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
