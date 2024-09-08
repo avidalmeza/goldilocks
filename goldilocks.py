@@ -29,7 +29,7 @@ def remove_parentheses(i):
     # \( matches an opening parenthesis
     # \) matches a closing parenthesis
     # [^)]* matches any character except a closing parenthesis
-    return re.sub(r'\([^)]*\)', "", i) if i else None
+    return re.sub(r"\([^)]*\)", "", i) if i else None
 
 # Define validate_formula() function
 def validate_formula(format, formula):
@@ -42,8 +42,8 @@ def validate_formula(format, formula):
 # Define sum_total_n() function, used for molecular formula case
 def sum_total_n(s):
     # Remove substrings within parentheses (i.e., isotopes) and extract remaining numeric values
-    s = re.sub(r'\(.*?\)', "", s)
-    numbers = re.findall(r'\d+\.?\d*', s)
+    s = re.sub(r"\(.*?\)", "", s)
+    numbers = re.findall(r"\d+\.?\d*", s)
 
     # Convert each number found to a float and sum
     total_sum = sum(float(num) for num in numbers)
@@ -72,12 +72,12 @@ def material_properties(absorb_xs, scatter_xs, molecular_mass, unit_cell_volume,
     # Find theoretical density in g/cc
     material_theory_density = (molecular_mass / unit_cell_volume / 0.6022) * Z_param # in g/cc
     
-    # Return material_scatter_depth, material_absorb_depth, material_total_depth, `material_scatter_thick, material_theory_density
+    # Return material_scatter_depth, material_absorb_depth, material_total_depth, material_scatter_thick, material_theory_density
     return material_scatter_depth, material_absorb_depth, material_total_depth, material_scatter_thick, material_theory_density
 
 # Define integrand_cyl() function
 def integrand_cyl(x, paramwave):
-    # Extract inner can radius (`R1`) and zeta
+    # Extract inner can radius (R1) and zeta
     R1 = paramwave[0]
     zeta = paramwave[1]
 
@@ -95,7 +95,7 @@ def integral_cyl(xs, unit_cell_volume, pack_fraction, R1):
 
 # Define integrand_ann() function
 def integrand_ann(x, paramwave):
-    # Extract inner can radius (`R1`), zeta, and outer can radius (`R2`)
+    # Extract inner can radius (R1), zeta, and outer can radius (R2)
     R1 = paramwave[0]
     zeta = paramwave[1]
     R2 = paramwave[2]
@@ -227,7 +227,7 @@ def read_cif(filepath):
     # Group 1: [A-Za-z]+ matches any uppercase (A-Z) or lowercase (a-z) letter or sequence of letters (i.e., element)
     # Group 2: (\([\w\d]+\)) matches any sequence denoted within parentheses (i.e., isotope like (Li7))
     # Group 3: (\d+(\.\d+)?) matches any digit (0-9), possibly with a decimal
-    pattern = re.compile(r'([A-Za-z]+|\([\w\d]+\))(\d+(\.\d+)?)')
+    pattern = re.compile(r"([A-Za-z]+|\([\w\d]+\))(\d+(\.\d+)?)")
 
     # Iterate through each element; return both index (i) and string for each element in chemical formula
     for i, string in enumerate(formula_split):
@@ -299,7 +299,7 @@ def xs_calculator(x, pack_fraction = 1.0, neutron_energy = None, neutron_wavelen
     # [A-Za-z][a-z]* matches a capital letter (e.g., C, O, B, P, F) or a capital letter followed by lowercase letters (e.g., Cu, Si, Al)
     # \d*(\.\d+)? matches any digit (0-9), possibly with a decimal
     # \([A-Za-z][a-z]?\d*(\.\d+)?\)\d*(\.\d+)? matches an isotope
-    mantid_format = r'^([A-Za-z][a-z]?\d*(\.\d+)?|\([A-Za-z][a-z]?\d*(\.\d+)?\)\d*(\.\d+)?)(-([A-Za-z][a-z]?\d*(\.\d+)?|\([A-Za-z][a-z]?\d*(\.\d+)?\)\d*(\.\d+)?))*$'
+    mantid_format = r"^([A-Za-z][a-z]?\d*(\.\d+)?|\([A-Za-z][a-z]?\d*(\.\d+)?\)\d*(\.\d+)?)(-([A-Za-z][a-z]?\d*(\.\d+)?|\([A-Za-z][a-z]?\d*(\.\d+)?\)\d*(\.\d+)?))*$"
 
     # Define valid file extension
     file_extension = ".cif"
@@ -518,7 +518,7 @@ def xs_calculator(x, pack_fraction = 1.0, neutron_energy = None, neutron_wavelen
     if "annulus" in can:
         # Iterate over each row in DataFrame
         for index, row in annulus.iterrows():
-            # Extract id and `can_volume_mm3` for each row
+            # Extract id and can_volume_mm3 for each row
             id = row["id"]
             can_volume_ann = row["sample_volume_mm3"] / 1000 # in cm^3
 
@@ -751,14 +751,17 @@ def xs_calculator(x, pack_fraction = 1.0, neutron_energy = None, neutron_wavelen
         (df_concat["percent_absorb"] + df_concat["percent_scatter"]) > 10,
         df_concat["can_percent_scatter"] > df_concat["percent_scatter"]
     ]
-    flags = ["(*)", "(**)", "(***)", "(***)"]
+    flags = [f"% scatter > 10", f"% absorb > 10", f"% scatter + % absorb > 10", f"% scatter can > % scatter"]
 
     # Add empty column
     df_concat["flag"] = ""
 
     # Fill column with flag based on conditions
     for condition, flag in zip(conditions, flags):
-        df_concat["flag"] = np.where(condition, df_concat["flag"] + flag, df_concat["flag"])
+        df_concat["flag"] = np.where(condition, df_concat["flag"] + ", " + flag, df_concat["flag"])
+
+    # Remove leading comma
+    df_concat["flag"] = df_concat["flag"].str.lstrip(', ')
 
     # Replace empty strings with NaN if no conditions are true
     df_concat["flag"] = df_concat["flag"].replace("", np.nan)
@@ -807,19 +810,19 @@ def xs_calculator(x, pack_fraction = 1.0, neutron_energy = None, neutron_wavelen
     ==========================================
     """
 
-    flag_txt = f"""
-    ==========================
-        Warning Flags
-    ==========================
-    (*)    % Scatter of sample > 10
+    # flag_txt = f"""
+    # ==========================
+    #     Warning Flags
+    # ==========================
+    # (*)    % Scatter of sample > 10
 
-    (**)   % Absorb. of sample > 10
+    # (**)   % Absorb. of sample > 10
 
-    (***)  (% Scatter of sample + % Absorb. of sample) > 10
+    # (***)  (% Scatter of sample + % Absorb. of sample) > 10
 
-    (****) % Scatter of can > % Scatter of sample
-    ==========================
-    """
+    # (****) % Scatter of can > % Scatter of sample
+    # ==========================
+    # """
 
     description_txt = f"""
     ====================================================
@@ -859,7 +862,7 @@ def xs_calculator(x, pack_fraction = 1.0, neutron_energy = None, neutron_wavelen
             txt_file.write(sample_txt)
             txt_file.write(neutron_txt)
             txt_file.write(sample_can_txt)
-            txt_file.write(flag_txt)
+            # txt_file.write(flag_txt)
             txt_file.write(description_txt)
     except Exception as e:
         print(f"An error occurred while writing to text file: {e}")

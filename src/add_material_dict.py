@@ -41,7 +41,7 @@ def read_cif(filepath):
                 block_data[i] = block[i]
             # If key does not exist in block, print message
             else:
-                # Store `None` in dictionary
+                # Store None in dictionary
                 block_data[i] = None
                 print(f"{i}: Not found in {database_code_PCD}.")
 
@@ -64,7 +64,7 @@ def read_cif(filepath):
         # \( matches an opening parenthesis
         # \) matches a closing parenthesis
         # [^)]* matches any character except a closing parenthesis
-        return re.sub(r'\([^)]*\)', "", i) if i else None
+        return re.sub(r"\([^)]*\)", "", i) if i else None
 
     # Extract variables of interest
     a = remove_parentheses(cif_dict[database_code_PCD]["_cell_length_a"])
@@ -91,20 +91,20 @@ def read_cif(filepath):
     # Group 1: [A-Za-z]+ matches any uppercase (A-Z) or lowercase (a-z) letter or sequence of letters (i.e., element)
     # Group 2: (\([\w\d]+\)) matches any sequence denoted within parentheses (i.e., isotope like (Li7))
     # Group 3: (\d+(\.\d+)?) matches any digit (0-9), possibly with a decimal
-    pattern = re.compile(r'([A-Za-z]+|\([\w\d]+\))(\d+(\.\d+)?)')
+    pattern = re.compile(r"([A-Za-z]+|\([\w\d]+\))(\d+(\.\d+)?)")
 
     # Iterate through each element; return both index (i) and string for each element in chemical formula
     for i, string in enumerate(formula_split):
         # Match string against regular expression pattern
         match = pattern.match(string)
     
-        # Check object is not `None`
+        # Check object is not None
         if match:
             # Extract element/Group 1 match
             element_symbol = match.group(1)
 
-            # Extract subscript/Group 2 match, if `None` (no subscript) then `1`
-            # `None` is unlikely when retrieving from "_chemical_formula_sum" in CIF
+            # Extract subscript/Group 2 match, if None (no subscript) then 1
+            # None is unlikely when retrieving from "_chemical_formula_sum" in CIF
             subscript = match.group(2) if match.group(2) else "1"
 
             # Find how many numbers per formula units
@@ -192,9 +192,9 @@ def add_material_dict(cif_filepath, material_csv_filepath):
     # Define remove_subscript() function
     def remove_subscript(i):
         # Replace all digits in string with empty string
-        return re.sub(r'\d+', "", i)
+        return re.sub(r"\d+", "", i)
 
-    # Create `new_row` DataFrame 
+    # Create new_row DataFrame 
     new_row = {"material": remove_subscript(mantid_formula),
                "absorb_xs": absorb_xs,
                "scatter_xs": scatter_xs,
@@ -204,9 +204,9 @@ def add_material_dict(cif_filepath, material_csv_filepath):
                "Z_param": Z_param,
     }
 
-    # Insert `new_row` DataFrame to end of `material_df` DataFrame and reset index
+    # Insert new_row DataFrame to end of material_df DataFrame and reset index
     material_df.loc[len(material_df)] = new_row
     material_df = material_df.reset_index(drop = True)
 
-    # Write `material_df` as csv to material_csv_filepath
+    # Write material_df as csv to material_csv_filepath
     material_df.to_csv(material_csv_filepath, index = False)

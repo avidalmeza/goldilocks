@@ -21,7 +21,7 @@ conda env create -f environment.yml
 conda activate goldilocks
 ```
 
-Before running the calculator, ensure that your virtual environment is activated. This step is crucial to avoid issues with dependencies.
+Activating the virtual environment is necessary to avoid issues with dependencies.
 
 ### Pathways 
 Users can run the calculator from within a Jupyter Notebook, the Terminal (Linux/macOS), Command Prompt (Windows), or any other Command Line Interface (CLI).
@@ -34,7 +34,7 @@ Users can run the calculator from within a Jupyter Notebook, the Terminal (Linux
 #### Terminal/Command Prompt
 3. Open [*xs_calculator.py*](/xs_calculator.py) and set calculator inputs
 
-4. Use CLI of choice to execute script
+4. Use CLI of choice to execute calculator
 ```
 python xs_calculator.py
 ```
@@ -52,3 +52,6 @@ This project was supported in part by an appointment to the ORNL GEM Fellow Inte
 - Matthew Stone, Neutron Scattering Division, ORNL
 - Andrew Christianson, Materials Science and Technology Division, ORNL
 - Yuanpeng Zhang, Neutron Scattering Division, ORNL
+
+### Artwork Credits
+- *Neutron Scattering Barns* by Milo Stone
